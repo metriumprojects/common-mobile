@@ -1,0 +1,1318 @@
+import React, { useState, useEffect, useRef, useCallback } from 'react';
+import {
+  View,
+  Text,
+  FlatList,
+  TextInput,
+  TouchableOpacity,
+  KeyboardAvoidingView,
+  Platform,
+  StyleSheet,
+  ActivityIndicator,
+  Image,
+  Modal,
+} from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { useRoute, useNavigation } from '@react-navigation/native';
+import Toast from 'react-native-toast-message';
+import { mobileApi } from '../api/client';
+import { mobileSocket } from '../api/socket';
+import { Community, ChatMessage, UserProfile } from '../types';
+import { useAuth } from '../context/AuthContext';
+
+export default function PrivateChatScreen() {
+  const route = useRoute<any>();
+  const navigation = useNavigation<any>();
+  const { user } = useAuth();
+  const {
+    communityId,
+    recipientId,
+    recipientName: paramRecipientName,
+    recipientRole: paramRecipientRole,
+    recipientAvatarColor: paramAvatarColor,
+  } = route.params || {};
+
+  const [community, setCommunity] = useState<Community | null>(null);
+  const [recipient, setRecipient] = useState<UserProfile>({
+    id: recipientId || 'member',
+    name: paramRecipientName || 'Member',
+    initials: (paramRecipientName || 'M')[0].toUpperCase(),
+    avatarColor: paramAvatarColor || '#8B5CF6',
+    role: paramRecipientRole || 'Community Member',
+    online: true,
+    joinedDate: 'Nov 2026',
+  });
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [inputText, setInputText] = useState('');
+  const [replyTarget, setReplyTarget] = useState<ChatMessage | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [sending, setSending] = useState(false);
+  const [isTyping, setIsTyping] = useState(false);
+  const [muted, setMuted] = useState(false);
+
+  // Search & Multi-Emoji Reactions
+  const [isSearching, setIsSearching] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [reactionTargetMessage, setReactionTargetMessage] = useState<ChatMessage | null>(null);
+  const EMOJI_LIST = ['👍', '❤️', '🔥', '😂', '🎉', '👏'];
+
+  // Modals
+  const [showOptionsModal, setShowOptionsModal] = useState(false);
+  const [showPlusMenu, setShowPlusMenu] = useState(false);
+
+  const flatListRef = useRef<FlatList>(null);
+  const typingTimeoutRef = useRef<any>(null);
+
+  const fetchPrivateMessages = useCallback(async () => {
+    try {
+      const all = await mobileApi.getCommunities();
+      const current = all.find((c) => c.id === communityId) || all[0];
+      if (current) {
+        setCommunity(current);
+        const sideChat = current.privateChats?.find(
+          (pc) => pc.recipient.id === recipientId
+        );
+        if (sideChat) {
+          setRecipient(sideChat.recipient);
+          setMessages(sideChat.messages || []);
+          if (sideChat.unreadCount > 0) {
+            mobileApi.markPrivateChatRead(current.id, recipientId).catch(() => {});
+          }
+        }
+      }
+    } catch (err) {
+      console.warn('Error fetching private messages:', err);
+    } finally {
+      setLoading(false);
+    }
+  }, [communityId, recipientId]);
+
+  useEffect(() => {
+    fetchPrivateMessages();
+
+    const handleNewPrivateMessage = ({
+      communityId: cId,
+      recipientId: rId,
+      message,
+    }: any) => {
+      if (cId !== communityId) return;
+      const isRelevant =
+        (rId === recipientId && message.senderId === user?.id) ||
+        (message.senderId === recipientId && rId === user?.id) ||
+        rId === recipientId;
+
+      if (isRelevant) {
+        setMessages((prev) => {
+          if (prev.some((m) => m.id === message.id)) return prev;
+          return [...prev, message];
+        });
+        setTimeout(() => {
+          flatListRef.current?.scrollToEnd({ animated: true });
+        }, 100);
+      }
+    };
+
+    const handleMessageLiked = ({ messageId, likes, userLiked }: any) => {
+      setMessages((prev) =>
+        prev.map((m) => (m.id === messageId ? { ...m, likes, userLiked } : m))
+      );
+    };
+
+    const handleReactionUpdated = ({ messageId, reactions }: any) => {
+      setMessages((prev) =>
+        prev.map((m) => (m.id === messageId ? { ...m, reactions } : m))
+      );
+    };
+
+    const handleMessageDeleted = ({ messageId }: any) => {
+      setMessages((prev) => prev.filter((m) => m.id !== messageId));
+    };
+
+    const handleUserTyping = (payload: any) => {
+      if (
+        payload?.communityId === communityId &&
+        payload?.isPrivate &&
+        payload?.recipientId === (user?.id || 'me')
+      ) {
+        setIsTyping(true);
+      }
+    };
+
+    const handleUserStopTyping = (payload: any) => {
+      if (payload?.communityId === communityId && payload?.isPrivate) {
+        setIsTyping(false);
+      }
+    };
+
+    mobileSocket.on('new-private-message', handleNewPrivateMessage);
+    mobileSocket.on('message-liked', handleMessageLiked);
+    mobileSocket.on('message-reaction-updated', handleReactionUpdated);
+    mobileSocket.on('message-deleted', handleMessageDeleted);
+    mobileSocket.on('user-typing', handleUserTyping);
+    mobileSocket.on('user-stop-typing', handleUserStopTyping);
+
+    return () => {
+      mobileSocket.off('new-private-message', handleNewPrivateMessage);
+      mobileSocket.off('message-liked', handleMessageLiked);
+      mobileSocket.off('message-reaction-updated', handleReactionUpdated);
+      mobileSocket.off('message-deleted', handleMessageDeleted);
+      mobileSocket.off('user-typing', handleUserTyping);
+      mobileSocket.off('user-stop-typing', handleUserStopTyping);
+    };
+  }, [communityId, recipientId, user?.id, fetchPrivateMessages]);
+
+  const handleTextChange = (text: string) => {
+    setInputText(text);
+    mobileSocket.emit('typing', {
+      communityId,
+      isPrivate: true,
+      recipientId,
+      userName: user?.name || 'Member',
+    });
+    if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
+    typingTimeoutRef.current = setTimeout(() => {
+      mobileSocket.emit('stop-typing', {
+        communityId,
+        isPrivate: true,
+        recipientId,
+      });
+    }, 1500);
+  };
+
+  const handleSendMessage = async () => {
+    if (!inputText.trim() || sending) return;
+    const textToSend = inputText.trim();
+    setInputText('');
+    setSending(true);
+    mobileSocket.emit('stop-typing', {
+      communityId,
+      isPrivate: true,
+      recipientId,
+    });
+
+    try {
+      const senderData = {
+        id: user?.id || 'me',
+        name: user?.name || user?.fullName || 'Community Member',
+        initials: (user?.name || user?.fullName || 'U')[0].toUpperCase(),
+        avatarColor: '#059669',
+      };
+
+      const replyTo = replyTarget
+        ? { senderName: replyTarget.senderName, body: replyTarget.body }
+        : undefined;
+
+      setReplyTarget(null);
+
+      await mobileApi.sendPrivateMessage(
+        communityId,
+        recipientId,
+        textToSend,
+        senderData,
+        replyTo,
+        {
+          name: recipient.name,
+          initials: recipient.initials,
+          avatarColor: recipient.avatarColor,
+          role: recipient.role,
+        }
+      );
+    } catch (err) {
+      console.error('Error sending private message:', err);
+    } finally {
+      setSending(false);
+    }
+  };
+
+  const handleToggleLike = async (messageId: string) => {
+    try {
+      await mobileApi.toggleLikeMessage(
+        communityId,
+        messageId,
+        user?.id || 'me'
+      );
+    } catch (err) {
+      console.error('Error liking private message:', err);
+    }
+  };
+
+  const handleToggleReaction = async (messageId: string, emoji: string) => {
+    setReactionTargetMessage(null);
+    try {
+      await mobileApi.toggleReaction(
+        communityId,
+        messageId,
+        emoji,
+        user?.id || 'me'
+      );
+    } catch (err) {
+      console.error('Error reacting to private message:', err);
+    }
+  };
+
+  const handleDeleteMessage = async (messageId: string) => {
+    try {
+      await mobileApi.deleteMessage(communityId, messageId);
+      setMessages((prev) => prev.filter((m) => m.id !== messageId));
+      Toast.show({ type: 'success', text1: 'Message deleted' });
+    } catch (err) {
+      Toast.show({ type: 'error', text1: 'Delete failed' });
+    }
+  };
+
+  const displayedMessages = messages.filter((msg) => {
+    if (!searchQuery.trim()) return true;
+    const q = searchQuery.toLowerCase();
+    return msg.body && msg.body.toLowerCase().includes(q);
+  });
+
+  const firstName = recipient.name.split(' ')[0];
+
+  const renderContextHeader = () => (
+    <View style={styles.contextContainer}>
+      {/* Scoped Explanatory Card */}
+      <View style={styles.scopedPrivacyBox}>
+        <View style={styles.scopedPrivacyHeader}>
+          <Text style={{ fontSize: 13 }}>🔒</Text>
+          <Text style={styles.scopedPrivacyTitle}>
+            Just you and {firstName}
+          </Text>
+        </View>
+        <Text style={styles.scopedPrivacyText}>
+          This side-chat belongs to{' '}
+          <Text style={{ fontWeight: '800', color: '#34D399' }}>
+            {community?.name || 'this community'}
+          </Text>
+          . It's private, but stays connected to the community where you met.
+        </Text>
+      </View>
+
+      {/* Overlapping Avatars Connection Card */}
+      <View style={styles.connectionCard}>
+        <View style={styles.overlappingAvatars}>
+          <View style={[styles.overlapCircle, { backgroundColor: '#059669', zIndex: 2 }]}>
+            <Text style={styles.overlapText}>
+              {(user?.name || user?.fullName || 'Y')[0].toUpperCase()}
+            </Text>
+          </View>
+          <View
+            style={[
+              styles.overlapCircle,
+              {
+                backgroundColor: recipient.avatarColor || '#8B5CF6',
+                marginLeft: -10,
+                zIndex: 1,
+              },
+            ]}
+          >
+            <Text style={styles.overlapText}>
+              {recipient.initials || recipient.name[0]}
+            </Text>
+          </View>
+        </View>
+        <Text style={styles.connectionTitle}>
+          You're both members of {community?.name || 'this space'}
+        </Text>
+        <Text style={styles.connectionRole}>{recipient.role}</Text>
+      </View>
+
+      {/* Date Divider */}
+      <View style={styles.dateDivider}>
+        <Text style={styles.dateDividerText}>TODAY</Text>
+      </View>
+    </View>
+  );
+
+  const renderMessage = ({ item }: { item: ChatMessage }) => {
+    const isSelf =
+      item.isSelf ||
+      (user?.id && item.senderId === user.id);
+
+    return (
+      <View
+        style={[
+          styles.messageRow,
+          isSelf ? styles.myMessageRow : styles.otherMessageRow,
+        ]}
+      >
+        {!isSelf ? (
+          <View
+            style={[
+              styles.msgAvatar,
+              { backgroundColor: recipient.avatarColor || '#8B5CF6' },
+            ]}
+          >
+            <Text style={styles.msgAvatarText}>
+              {recipient.initials || recipient.name[0]}
+            </Text>
+          </View>
+        ) : null}
+
+        <View
+          style={[
+            styles.messageColumn,
+            isSelf ? { alignItems: 'flex-end' } : { alignItems: 'flex-start' },
+          ]}
+        >
+          <View style={styles.senderTimeRow}>
+            <Text style={styles.senderLabel}>
+              {isSelf ? 'You' : item.senderName || recipient.name}
+            </Text>
+            <Text style={styles.timeLabel}>{item.timestamp || 'Just now'}</Text>
+          </View>
+
+          <View
+            style={[
+              styles.bubbleContainer,
+              isSelf ? styles.myBubble : styles.otherBubble,
+            ]}
+          >
+            {item.replyTo ? (
+              <View style={styles.replyQuoteBox}>
+                <Text style={styles.replyQuoteSender}>
+                  {item.replyTo.senderName}:
+                </Text>
+                <Text style={styles.replyQuoteText} numberOfLines={2}>
+                  {item.replyTo.body}
+                </Text>
+              </View>
+            ) : null}
+
+            {item.imageUrl ? (
+              <Image
+                source={{ uri: item.imageUrl }}
+                style={{ width: 220, height: 160, borderRadius: 12, marginBottom: item.body ? 6 : 0 }}
+                resizeMode="cover"
+              />
+            ) : null}
+
+            {item.body ? (
+              <Text
+                style={[
+                  styles.messageText,
+                  isSelf ? styles.myMessageText : styles.otherMessageText,
+                ]}
+              >
+                {item.body}
+              </Text>
+            ) : null}
+          </View>
+
+          {/* Multi-Emoji Reaction Chips */}
+          {item.reactions && Object.keys(item.reactions).length > 0 ? (
+            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 4, marginTop: 4 }}>
+              {Object.entries(item.reactions).map(([emoji, uids]) => {
+                if (!Array.isArray(uids) || uids.length === 0) return null;
+                const reacted = user?.id && uids.includes(user.id);
+                return (
+                  <TouchableOpacity
+                    key={emoji}
+                    onPress={() => handleToggleReaction(item.id, emoji)}
+                    style={{
+                      flexDirection: 'row',
+                      alignItems: 'center',
+                      backgroundColor: reacted ? '#DCFCE7' : '#F1F5F9',
+                      borderColor: reacted ? '#16A34A' : '#CBD5E1',
+                      borderWidth: 1,
+                      borderRadius: 12,
+                      paddingHorizontal: 6,
+                      paddingVertical: 2,
+                      gap: 3,
+                    }}
+                  >
+                    <Text style={{ fontSize: 11 }}>{emoji}</Text>
+                    <Text style={{ fontSize: 10, fontWeight: '700', color: reacted ? '#15803D' : '#475569' }}>
+                      {uids.length}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+          ) : null}
+
+          <View style={styles.msgFooterRow}>
+            {isSelf ? (
+              <Text style={styles.readReceiptText}>✓✓ Read</Text>
+            ) : null}
+
+            <TouchableOpacity
+              onPress={() => handleToggleLike(item.id)}
+              style={styles.msgActionBtn}
+            >
+              <Text
+                style={[
+                  styles.msgActionText,
+                  item.userLiked && styles.msgActionLiked,
+                ]}
+              >
+                👍 Like {item.likes ? `• ${item.likes}` : ''}
+              </Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              onPress={() => setReactionTargetMessage(item)}
+              style={styles.msgActionBtn}
+            >
+              <Text style={styles.msgActionText}>😊 React</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              onPress={() => setReplyTarget(item)}
+              style={styles.msgActionBtn}
+            >
+              <Text style={styles.msgActionText}>↩ Reply</Text>
+            </TouchableOpacity>
+
+            {isSelf ? (
+              <TouchableOpacity
+                onPress={() => handleDeleteMessage(item.id)}
+                style={styles.msgActionBtn}
+              >
+                <Text style={[styles.msgActionText, { color: '#EF4444' }]}>🗑️</Text>
+              </TouchableOpacity>
+            ) : null}
+          </View>
+        </View>
+      </View>
+    );
+  };
+
+  return (
+    <SafeAreaView style={styles.safeArea}>
+      {/* Top Header */}
+      <View style={styles.topHeader}>
+        <TouchableOpacity
+          onPress={() => navigation.goBack()}
+          style={styles.backButton}
+          activeOpacity={0.7}
+        >
+          <Text style={styles.backButtonText}>← Back</Text>
+        </TouchableOpacity>
+
+        <View style={styles.headerCenter}>
+          <View style={styles.headerAvatarWrap}>
+            <View
+              style={[
+                styles.headerAvatar,
+                { backgroundColor: recipient.avatarColor || '#8B5CF6' },
+              ]}
+            >
+              <Text style={styles.headerAvatarText}>
+                {recipient.initials || recipient.name[0]}
+              </Text>
+            </View>
+            <View style={styles.headerOnlineDot} />
+          </View>
+
+          <View>
+            <Text style={styles.headerTitle}>{recipient.name}</Text>
+            <Text style={styles.headerSubtitle}>
+              {recipient.online !== false ? '● Online now' : 'Offline'}
+              {muted ? ' • 🔕 Muted' : ''}
+            </Text>
+          </View>
+        </View>
+
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+          <TouchableOpacity
+            style={styles.optionsButton}
+            onPress={() => {
+              setIsSearching(!isSearching);
+              if (isSearching) setSearchQuery('');
+            }}
+            activeOpacity={0.7}
+          >
+            <Text style={{ fontSize: 16 }}>🔍</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.optionsButton}
+            onPress={() => setShowOptionsModal(true)}
+            activeOpacity={0.7}
+          >
+            <Text style={styles.optionsButtonText}>•••</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+
+      {/* In-Chat Search Bar */}
+      {isSearching ? (
+        <View
+          style={{
+            flexDirection: 'row',
+            alignItems: 'center',
+            backgroundColor: '#F8FAFC',
+            borderBottomWidth: 1,
+            borderBottomColor: '#E2E8F0',
+            paddingHorizontal: 16,
+            paddingVertical: 8,
+            gap: 8,
+          }}
+        >
+          <Text style={{ fontSize: 14 }}>🔍</Text>
+          <TextInput
+            style={{
+              flex: 1,
+              fontSize: 13,
+              color: '#0F172A',
+              paddingVertical: 4,
+            }}
+            placeholder={`Search messages with ${recipient.name.split(' ')[0]}...`}
+            placeholderTextColor="#94A3B8"
+            value={searchQuery}
+            onChangeText={setSearchQuery}
+            autoFocus
+          />
+          {searchQuery ? (
+            <Text style={{ fontSize: 11, color: '#64748B' }}>
+              {displayedMessages.length} found
+            </Text>
+          ) : null}
+          <TouchableOpacity
+            onPress={() => {
+              setIsSearching(false);
+              setSearchQuery('');
+            }}
+            style={{ padding: 4 }}
+          >
+            <Text style={{ fontSize: 14, color: '#64748B' }}>✕</Text>
+          </TouchableOpacity>
+        </View>
+      ) : null}
+
+      {/* Community Context Banner linking side-chat to parent community */}
+      <TouchableOpacity
+        style={styles.communityContextBanner}
+        onPress={() =>
+          navigation.navigate('CommunityChat', {
+            communityId: community?.id || communityId,
+          })
+        }
+        activeOpacity={0.75}
+      >
+        <View style={styles.contextBannerLeft}>
+          {community?.imageUrl ? (
+            <Image
+              source={{ uri: community.imageUrl }}
+              style={styles.contextCommAvatar}
+            />
+          ) : (
+            <View style={styles.contextCommFallback}>
+              <Text style={{ fontSize: 12 }}>💬</Text>
+            </View>
+          )}
+          <View style={{ flex: 1 }}>
+            <Text style={styles.contextBannerTitle} numberOfLines={1}>
+              Private side-chat in {community?.name || 'Community'}
+            </Text>
+            <Text style={styles.contextBannerSub}>View community room</Text>
+          </View>
+        </View>
+        <Text style={styles.contextChevron}>›</Text>
+      </TouchableOpacity>
+
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        style={styles.contentArea}
+      >
+        {loading ? (
+          <View style={styles.loadingContainer}>
+            <ActivityIndicator size="large" color="#10B981" />
+          </View>
+        ) : (
+          <FlatList
+            ref={flatListRef}
+            data={displayedMessages}
+            keyExtractor={(item) => item.id}
+            renderItem={renderMessage}
+            ListHeaderComponent={renderContextHeader}
+            contentContainerStyle={styles.messageList}
+            onContentSizeChange={() =>
+              flatListRef.current?.scrollToEnd({ animated: false })
+            }
+          />
+        )}
+
+        {/* Typing Indicator */}
+        {isTyping ? (
+          <View style={styles.typingRow}>
+            <Text style={styles.typingText}>
+              ✍️ {firstName} is typing...
+            </Text>
+          </View>
+        ) : null}
+
+        {/* Plus Quick-Action Menu */}
+        {showPlusMenu ? (
+          <View style={styles.plusMenuPopup}>
+            <TouchableOpacity
+              style={styles.plusMenuItem}
+              onPress={() => {
+                setShowPlusMenu(false);
+                setInputText(`👋 Hey ${firstName}! Are you going to this week's meetup?`);
+              }}
+            >
+              <Text style={styles.plusMenuItemText}>
+                👋 Ask About Weekly Meetup
+              </Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.plusMenuItem}
+              onPress={() => {
+                setShowPlusMenu(false);
+                setInputText(`📍 Let's meet near the entrance 10 mins before start!`);
+              }}
+            >
+              <Text style={styles.plusMenuItemText}>
+                📍 Share Meetup Spot
+              </Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.plusMenuItem}
+              onPress={() => {
+                setShowPlusMenu(false);
+                setInputText(`☕ Down for a quick coffee catchup after the session?`);
+              }}
+            >
+              <Text style={styles.plusMenuItemText}>
+                ☕ Suggest 1-on-1 Catchup
+              </Text>
+            </TouchableOpacity>
+          </View>
+        ) : null}
+
+        {/* Docked Reply Quote Banner */}
+        {replyTarget ? (
+          <View style={styles.replyBanner}>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.replyBannerAuthor}>
+                Replying to {replyTarget.senderName}
+              </Text>
+              <Text style={styles.replyBannerBody} numberOfLines={1}>
+                {replyTarget.body}
+              </Text>
+            </View>
+            <TouchableOpacity
+              onPress={() => setReplyTarget(null)}
+              style={{ padding: 6 }}
+            >
+              <Text style={{ color: '#94A3B8', fontSize: 14 }}>✕</Text>
+            </TouchableOpacity>
+          </View>
+        ) : null}
+
+        {/* Bottom Composer */}
+        <View style={styles.inputBar}>
+          <TouchableOpacity
+            style={styles.plusBtn}
+            onPress={() => setShowPlusMenu(!showPlusMenu)}
+            activeOpacity={0.75}
+          >
+            <Text style={styles.plusBtnText}>{showPlusMenu ? '✕' : '＋'}</Text>
+          </TouchableOpacity>
+
+          <TextInput
+            style={styles.textInput}
+            placeholder={`Message ${firstName} privately...`}
+            placeholderTextColor="#94A3B8"
+            value={inputText}
+            onChangeText={handleTextChange}
+            multiline
+          />
+
+          <TouchableOpacity
+            style={[
+              styles.sendButton,
+              !inputText.trim() && styles.sendButtonDisabled,
+            ]}
+            onPress={handleSendMessage}
+            disabled={!inputText.trim() || sending}
+            activeOpacity={0.75}
+          >
+            <Text style={styles.sendButtonText}>Send</Text>
+          </TouchableOpacity>
+        </View>
+      </KeyboardAvoidingView>
+
+      {/* Options Modal */}
+      <Modal
+        visible={showOptionsModal}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => setShowOptionsModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalSheet}>
+            <Text style={styles.modalTitle}>
+              Options with {recipient.name}
+            </Text>
+
+            <TouchableOpacity
+              style={styles.optionRowBtn}
+              onPress={() => {
+                setShowOptionsModal(false);
+                navigation.navigate('CommunityChat', {
+                  communityId: community?.id || communityId,
+                });
+              }}
+            >
+              <Text style={styles.optionRowText}>
+                💬 Go to {community?.name || 'Community'} Room
+              </Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.optionRowBtn}
+              onPress={() => {
+                setShowOptionsModal(false);
+                navigation.navigate('CommunityInbox', {
+                  communityId: community?.id || communityId,
+                });
+              }}
+            >
+              <Text style={styles.optionRowText}>
+                🔒 View All Private Chats in {community?.name || 'Community'}
+              </Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.optionRowBtn}
+              onPress={() => {
+                setMuted(!muted);
+                setShowOptionsModal(false);
+                Toast.show({
+                  type: 'info',
+                  text1: !muted ? 'Notifications Muted' : 'Notifications Unmuted',
+                  text2: `Side-chat with ${recipient.name}`,
+                });
+              }}
+            >
+              <Text style={styles.optionRowText}>
+                {muted ? '🔔 Unmute Notifications' : '🔕 Mute Notifications'}
+              </Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.closeModalBtn}
+              onPress={() => setShowOptionsModal(false)}
+            >
+              <Text style={styles.closeModalBtnText}>Close</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Emoji Reaction Modal */}
+      <Modal
+        visible={Boolean(reactionTargetMessage)}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setReactionTargetMessage(null)}
+      >
+        <TouchableOpacity
+          style={styles.modalOverlay}
+          activeOpacity={1}
+          onPress={() => setReactionTargetMessage(null)}
+        >
+          <View
+            style={{
+              backgroundColor: '#1E293B',
+              borderRadius: 24,
+              paddingHorizontal: 16,
+              paddingVertical: 10,
+              flexDirection: 'row',
+              gap: 12,
+              alignSelf: 'center',
+              marginBottom: 100,
+              borderWidth: 1,
+              borderColor: '#334155',
+            }}
+          >
+            {EMOJI_LIST.map((em) => (
+              <TouchableOpacity
+                key={em}
+                onPress={() => {
+                  if (reactionTargetMessage) {
+                    handleToggleReaction(reactionTargetMessage.id, em);
+                  }
+                }}
+                style={{ padding: 6 }}
+              >
+                <Text style={{ fontSize: 24 }}>{em}</Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+        </TouchableOpacity>
+      </Modal>
+    </SafeAreaView>
+  );
+}
+
+const styles = StyleSheet.create({
+  safeArea: {
+    flex: 1,
+    backgroundColor: '#F8F9FA',
+  },
+  topHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    backgroundColor: '#FFFFFF',
+    borderBottomWidth: 1,
+    borderBottomColor: '#EAECF0',
+  },
+  backButton: {
+    paddingVertical: 6,
+    paddingRight: 10,
+  },
+  backButtonText: {
+    color: '#111827',
+    fontSize: 16,
+    fontWeight: '800',
+  },
+  headerCenter: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 10,
+  },
+  headerAvatarWrap: {
+    position: 'relative',
+  },
+  headerAvatar: {
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  headerAvatarText: {
+    color: '#111827',
+    fontSize: 13,
+    fontWeight: '800',
+  },
+  headerOnlineDot: {
+    position: 'absolute',
+    bottom: -1,
+    right: -1,
+    width: 9,
+    height: 9,
+    borderRadius: 5,
+    backgroundColor: '#22C55E',
+    borderWidth: 2,
+    borderColor: '#FFFFFF',
+  },
+  headerTitle: {
+    fontSize: 15,
+    fontWeight: '800',
+    color: '#111827',
+  },
+  headerSubtitle: {
+    fontSize: 11,
+    color: '#16A34A',
+    fontWeight: '700',
+  },
+  optionsButton: {
+    paddingHorizontal: 8,
+    paddingVertical: 6,
+  },
+  optionsButtonText: {
+    color: '#111827',
+    fontSize: 18,
+    fontWeight: '800',
+  },
+  communityContextBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    paddingVertical: 9,
+    backgroundColor: '#F8F9FA',
+    borderBottomWidth: 1,
+    borderBottomColor: '#EAECF0',
+  },
+  contextBannerLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    flex: 1,
+  },
+  contextCommAvatar: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+  },
+  contextCommFallback: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: '#EBF8EE',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  contextBannerTitle: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#111827',
+  },
+  contextBannerSub: {
+    fontSize: 11,
+    color: '#16A34A',
+    fontWeight: '700',
+  },
+  contextChevron: {
+    color: '#9CA3AF',
+    fontSize: 16,
+    fontWeight: '700',
+  },
+  contentArea: {
+    flex: 1,
+  },
+  contextContainer: {
+    marginBottom: 14,
+    gap: 12,
+  },
+  scopedPrivacyBox: {
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#EAECF0',
+    borderRadius: 16,
+    padding: 12,
+  },
+  scopedPrivacyHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginBottom: 4,
+  },
+  scopedPrivacyTitle: {
+    fontSize: 12,
+    fontWeight: '800',
+    color: '#111827',
+  },
+  scopedPrivacyText: {
+    fontSize: 11.5,
+    color: '#6B7280',
+    lineHeight: 17,
+  },
+  connectionCard: {
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#EAECF0',
+    borderRadius: 16,
+    padding: 12,
+    alignItems: 'center',
+    gap: 4,
+  },
+  overlappingAvatars: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 2,
+  },
+  overlapCircle: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 2,
+    borderColor: '#FFFFFF',
+  },
+  overlapText: {
+    color: '#111827',
+    fontSize: 11,
+    fontWeight: '800',
+  },
+  connectionTitle: {
+    fontSize: 12,
+    fontWeight: '800',
+    color: '#111827',
+  },
+  connectionRole: {
+    fontSize: 11,
+    color: '#6B7280',
+  },
+  dateDivider: {
+    alignItems: 'center',
+    marginVertical: 4,
+  },
+  dateDividerText: {
+    fontSize: 10,
+    fontWeight: '800',
+    color: '#9CA3AF',
+    letterSpacing: 0.8,
+  },
+  messageList: {
+    paddingHorizontal: 14,
+    paddingVertical: 14,
+    gap: 12,
+  },
+  messageRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 8,
+    marginBottom: 6,
+  },
+  myMessageRow: {
+    justifyContent: 'flex-end',
+  },
+  otherMessageRow: {
+    justifyContent: 'flex-start',
+  },
+  msgAvatar: {
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 2,
+  },
+  msgAvatarText: {
+    color: '#111827',
+    fontSize: 11,
+    fontWeight: '800',
+  },
+  messageColumn: {
+    maxWidth: '78%',
+  },
+  senderTimeRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginBottom: 3,
+  },
+  senderLabel: {
+    fontSize: 11,
+    fontWeight: '800',
+    color: '#111827',
+  },
+  timeLabel: {
+    fontSize: 10,
+    color: '#9CA3AF',
+  },
+  bubbleContainer: {
+    borderRadius: 16,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+  },
+  myBubble: {
+    backgroundColor: '#DCFCE7',
+    borderWidth: 1,
+    borderColor: '#BBF7D0',
+    borderTopRightRadius: 4,
+  },
+  otherBubble: {
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#EAECF0',
+    borderTopLeftRadius: 4,
+  },
+  replyQuoteBox: {
+    borderLeftWidth: 3,
+    borderLeftColor: '#22C55E',
+    paddingLeft: 8,
+    paddingVertical: 3,
+    marginBottom: 6,
+    backgroundColor: '#F3F4F6',
+    borderRadius: 4,
+  },
+  replyQuoteSender: {
+    fontSize: 11,
+    fontWeight: '800',
+    color: '#111827',
+  },
+  replyQuoteText: {
+    fontSize: 11,
+    color: '#6B7280',
+  },
+  messageText: {
+    fontSize: 13.5,
+    lineHeight: 19,
+  },
+  myMessageText: {
+    color: '#111827',
+  },
+  otherMessageText: {
+    color: '#111827',
+  },
+  msgFooterRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    marginTop: 4,
+  },
+  readReceiptText: {
+    fontSize: 10,
+    color: '#9CA3AF',
+    fontWeight: '600',
+  },
+  msgActionBtn: {
+    paddingVertical: 1,
+  },
+  msgActionText: {
+    fontSize: 11,
+    color: '#9CA3AF',
+    fontWeight: '600',
+  },
+  msgActionLiked: {
+    color: '#22C55E',
+    fontWeight: '800',
+  },
+  typingRow: {
+    paddingHorizontal: 16,
+    paddingVertical: 4,
+  },
+  typingText: {
+    fontSize: 11,
+    color: '#16A34A',
+    fontStyle: 'italic',
+  },
+  plusMenuPopup: {
+    backgroundColor: '#FFFFFF',
+    marginHorizontal: 14,
+    marginBottom: 6,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: '#EAECF0',
+    padding: 6,
+    shadowColor: '#000',
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    elevation: 3,
+  },
+  plusMenuItem: {
+    paddingVertical: 9,
+    paddingHorizontal: 12,
+  },
+  plusMenuItemText: {
+    color: '#111827',
+    fontSize: 13,
+    fontWeight: '600',
+  },
+  replyBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: '#FFFFFF',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderTopWidth: 1,
+    borderTopColor: '#EAECF0',
+  },
+  replyBannerAuthor: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#16A34A',
+  },
+  replyBannerBody: {
+    fontSize: 11,
+    color: '#6B7280',
+  },
+  inputBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    backgroundColor: '#FFFFFF',
+    borderTopWidth: 1,
+    borderTopColor: '#EAECF0',
+    gap: 8,
+  },
+  plusBtn: {
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    backgroundColor: '#F3F4F6',
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  plusBtnText: {
+    color: '#111827',
+    fontSize: 18,
+    fontWeight: '800',
+  },
+  textInput: {
+    flex: 1,
+    backgroundColor: '#F8F9FA',
+    borderRadius: 20,
+    paddingHorizontal: 14,
+    paddingVertical: 9,
+    color: '#111827',
+    fontSize: 14,
+    maxHeight: 100,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+  },
+  sendButton: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: '#0F172A',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  sendButtonDisabled: {
+    opacity: 0.45,
+  },
+  sendButtonText: {
+    color: '#22C55E',
+    fontSize: 16,
+    fontWeight: '900',
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#F8F9FA',
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.45)',
+    justifyContent: 'flex-end',
+  },
+  modalSheet: {
+    backgroundColor: '#FFFFFF',
+    borderTopLeftRadius: 22,
+    borderTopRightRadius: 22,
+    padding: 20,
+    gap: 10,
+  },
+  modalTitle: {
+    fontSize: 17,
+    fontWeight: '800',
+    color: '#111827',
+    marginBottom: 6,
+  },
+  optionRowBtn: {
+    backgroundColor: '#F8F9FA',
+    padding: 14,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#EAECF0',
+  },
+  optionRowText: {
+    color: '#111827',
+    fontSize: 13,
+    fontWeight: '700',
+  },
+  closeModalBtn: {
+    backgroundColor: '#0F172A',
+    padding: 13,
+    borderRadius: 12,
+    alignItems: 'center',
+    marginTop: 4,
+  },
+  closeModalBtnText: {
+    color: '#FFFFFF',
+    fontSize: 13,
+    fontWeight: '800',
+  },
+});
