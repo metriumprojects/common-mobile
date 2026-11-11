@@ -1,4 +1,4 @@
-package com.circleproof
+package com.common.community
 
 import android.app.Application
 import com.facebook.react.PackageList
