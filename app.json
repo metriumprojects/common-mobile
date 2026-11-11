@@ -10,7 +10,7 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.common.community",
-      "buildNumber": "5"
+      "buildNumber": "6"
     },
     "android": {
       "package": "com.common.community",

@@ -33,12 +33,32 @@ target 'common' do
     )
 
     # Ensure all Pods (including resource bundles) meet Xcode 26 minimum iOS deployment target (15.1)
+    # and disable FMT_USE_CONSTEVAL for Xcode 26 Apple Clang compatibility with React Native's fmt pod.
     installer.pods_project.targets.each do |target|
       target.build_configurations.each do |build_config|
         deployment_target = build_config.build_settings['IPHONEOS_DEPLOYMENT_TARGET']
         if deployment_target.nil? || Gem::Version.new(deployment_target) < Gem::Version.new('15.1')
           build_config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '15.1'
         end
+        defs = build_config.build_settings['GCC_PREPROCESSOR_DEFINITIONS'] || ['$(inherited)']
+        defs = [defs] if defs.is_a?(String)
+        unless defs.any? { |d| d.include?('FMT_USE_CONSTEVAL') }
+          build_config.build_settings['GCC_PREPROCESSOR_DEFINITIONS'] = defs + ['FMT_USE_CONSTEVAL=0']
+        end
+      end
+    end
+
+    # Patch fmt headers directly so FMT_USE_CONSTEVAL is forced to 0 under Apple Clang (Xcode 26+)
+    %w[base.h core.h].each do |header|
+      fmt_header = File.join(installer.sandbox.root, 'fmt', 'include', 'fmt', header)
+      next unless File.exist?(fmt_header)
+
+      real_header = File.realpath(fmt_header)
+      content = File.read(real_header)
+      patched = content.gsub(/^(#\s*define\s+FMT_USE_CONSTEVAL\s+)1\b/) { "#{$1}0" }
+      if patched != content
+        File.chmod(0644, real_header)
+        File.write(real_header, patched)
       end
     end
   end
