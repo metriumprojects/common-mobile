@@ -145,6 +145,9 @@ export default function HomeScreen() {
         location: newCommLocation.trim() || 'Local & Online',
         description: newCommDesc.trim() || 'A vibrant community space.',
       });
+      setCommunities((prev) =>
+        prev.some((c) => c.id === created.id) ? prev : [created, ...prev]
+      );
       setShowCreateModal(false);
       setNewCommName('');
       setNewCommLocation('');
