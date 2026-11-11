@@ -1,6 +1,7 @@
 import 'react-native-gesture-handler';
 import React from 'react';
 import { StatusBar, View, ActivityIndicator, Text, StyleSheet } from 'react-native';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { NavigationContainer } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
 import { ClerkProvider } from '@clerk/clerk-expo';
@@ -63,22 +64,24 @@ function RootNavigator() {
 
 export default function App() {
   return (
-    <ClerkProvider
-      publishableKey={APP_CONFIG.CLERK_PUBLISHABLE_KEY}
-      tokenCache={tokenCache}
-    >
-      <AuthProvider>
-        <StatusBar
-          barStyle="dark-content"
-          backgroundColor="#F8F9FA"
-          translucent={false}
-        />
-        <NavigationContainer>
-          <RootNavigator />
-        </NavigationContainer>
-        <Toast />
-      </AuthProvider>
-    </ClerkProvider>
+    <SafeAreaProvider>
+      <ClerkProvider
+        publishableKey={APP_CONFIG.CLERK_PUBLISHABLE_KEY}
+        tokenCache={tokenCache}
+      >
+        <AuthProvider>
+          <StatusBar
+            barStyle="dark-content"
+            backgroundColor="#F8F9FA"
+            translucent={false}
+          />
+          <NavigationContainer>
+            <RootNavigator />
+          </NavigationContainer>
+          <Toast />
+        </AuthProvider>
+      </ClerkProvider>
+    </SafeAreaProvider>
   );
 }
 

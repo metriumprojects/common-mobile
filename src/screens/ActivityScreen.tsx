@@ -13,6 +13,7 @@ import { useNavigation } from '@react-navigation/native';
 import { mobileApi } from '../api/client';
 import { mobileSocket } from '../api/socket';
 import { Community } from '../types';
+import BottomNav from '../components/BottomNav';
 
 interface ActivityItem {
   id: string;
@@ -231,7 +232,7 @@ export default function ActivityScreen() {
   );
 
   return (
-    <SafeAreaView style={styles.safeArea}>
+    <SafeAreaView edges={['top']} style={styles.safeArea}>
       {/* Top Header */}
       <View style={styles.header}>
         <TouchableOpacity
@@ -308,6 +309,13 @@ export default function ActivityScreen() {
           }
         />
       )}
+
+      {/* Unified Figma Bottom Navigation Bar */}
+      <BottomNav
+        activeTab="Activity"
+        navigation={navigation}
+        onCommunityCreated={() => fetchActivity()}
+      />
     </SafeAreaView>
   );
 }

@@ -9,6 +9,8 @@
     "build:apk": "eas build -p android --profile preview",
     "build:apk:local": "eas build -p android --profile preview --local",
     "build:production": "eas build -p android --profile production",
+    "build:ios": "eas build -p ios --profile production",
+    "submit:ios": "eas submit -p ios --latest",
     "build:list": "eas build:list",
     "build-android": "cd android && gradlew assembleDebug && cd ../",
     "assemble-release": "cd android && gradlew.bat clean assembleRelease",

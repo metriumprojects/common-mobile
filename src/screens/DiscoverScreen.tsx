@@ -17,6 +17,8 @@ import Toast from 'react-native-toast-message';
 import { mobileApi } from '../api/client';
 import { mobileSocket } from '../api/socket';
 import { Community } from '../types';
+import { useAuth } from '../context/AuthContext';
+import BottomNav from '../components/BottomNav';
 
 const FILTER_PILLS = [
   { id: 'trending', label: 'Trending', icon: null },
@@ -29,6 +31,13 @@ const FILTER_PILLS = [
 
 export default function DiscoverScreen() {
   const navigation = useNavigation<any>();
+  const { user } = useAuth();
+  const userInitials = (user?.fullName || user?.name || user?.email || 'U')
+    .split(' ')
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((n: string) => n[0]?.toUpperCase())
+    .join('') || 'U';
 
   const [communities, setCommunities] = useState<Community[]>([]);
   const [searchTopic, setSearchTopic] = useState('');
@@ -347,7 +356,7 @@ export default function DiscoverScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.safeArea}>
+    <SafeAreaView edges={['top']} style={styles.safeArea}>
       {/* Figma Top Logo Bar */}
       <View style={styles.topLogoBar}>
         <View style={styles.logoRow}>
@@ -361,7 +370,7 @@ export default function DiscoverScreen() {
           onPress={() => navigation.navigate('Profile')}
           activeOpacity={0.8}
         >
-          <Text style={styles.userBadgeText}>AS</Text>
+          <Text style={styles.userBadgeText}>{userInitials}</Text>
           <View style={styles.userBadgeDot} />
         </TouchableOpacity>
       </View>
@@ -480,47 +489,12 @@ export default function DiscoverScreen() {
         />
       )}
 
-      {/* Figma Bottom Navigation Bar */}
-      <View style={styles.bottomNav}>
-        <TouchableOpacity
-          style={styles.navItem}
-          onPress={() => navigation.navigate('Home')}
-        >
-          <Text style={styles.navIconInactive}>⌂</Text>
-          <Text style={styles.navLabelInactive}>My Space</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity style={styles.navItem}>
-          <Text style={styles.navIconActive}>◎</Text>
-          <Text style={styles.navLabelActive}>Discover</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={styles.navCenterWrapper}
-          onPress={() => navigation.navigate('Home')}
-        >
-          <View style={styles.navCreateCircle}>
-            <Text style={styles.navCreatePlus}>+</Text>
-          </View>
-          <Text style={styles.navLabelInactive}>Create</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={styles.navItem}
-          onPress={() => navigation.navigate('Activity')}
-        >
-          <Text style={styles.navIconInactive}>🔔</Text>
-          <Text style={styles.navLabelInactive}>Activity</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={styles.navItem}
-          onPress={() => navigation.navigate('Profile')}
-        >
-          <Text style={styles.navIconInactive}>👤</Text>
-          <Text style={styles.navLabelInactive}>Me</Text>
-        </TouchableOpacity>
-      </View>
+      {/* Unified Figma Bottom Navigation Bar */}
+      <BottomNav
+        activeTab="Discover"
+        navigation={navigation}
+        onCommunityCreated={() => fetchCommunities()}
+      />
     </SafeAreaView>
   );
 }

@@ -19,6 +19,7 @@ import { mobileApi } from '../api/client';
 import { mobileSocket } from '../api/socket';
 import { Community, UserProfile } from '../types';
 import { useAuth } from '../context/AuthContext';
+import BottomNav from '../components/BottomNav';
 
 export default function HomeScreen() {
   const navigation = useNavigation<any>();
@@ -356,7 +357,7 @@ export default function HomeScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.safeArea}>
+    <SafeAreaView edges={['top']} style={styles.safeArea}>
       {/* Top Bar */}
       <View style={styles.topBar}>
         <View style={styles.brandRow}>
@@ -489,57 +490,13 @@ export default function HomeScreen() {
         />
       )}
 
-      {/* Global Bottom Navigation Bar */}
-      <View style={styles.bottomNav}>
-        <TouchableOpacity
-          style={styles.navItem}
-          onPress={() => {}}
-          activeOpacity={0.7}
-        >
-          <Text style={styles.navIconActive}>🏠</Text>
-          <Text style={styles.navLabelActive}>My Space</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={styles.navItem}
-          onPress={() => navigation.navigate('Discover')}
-          activeOpacity={0.7}
-        >
-          <Text style={styles.navIcon}>🧭</Text>
-          <Text style={styles.navLabel}>Discover</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={styles.navCenterCreateBtn}
-          onPress={() => setShowCreateModal(true)}
-          activeOpacity={0.85}
-        >
-          <Text style={styles.navCenterPlus}>＋</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={styles.navItem}
-          onPress={() => navigation.navigate('Activity')}
-          activeOpacity={0.7}
-        >
-          <View>
-            <Text style={styles.navIcon}>🔔</Text>
-            {totalGlobalUnread > 0 ? (
-              <View style={styles.navBadgeDot} />
-            ) : null}
-          </View>
-          <Text style={styles.navLabel}>Activity</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={styles.navItem}
-          onPress={() => navigation.navigate('Profile')}
-          activeOpacity={0.7}
-        >
-          <Text style={styles.navIcon}>👤</Text>
-          <Text style={styles.navLabel}>Me</Text>
-        </TouchableOpacity>
-      </View>
+      {/* Unified Figma Bottom Navigation Bar */}
+      <BottomNav
+        activeTab="Home"
+        navigation={navigation}
+        unreadCount={totalGlobalUnread}
+        onCreatePress={() => setShowCreateModal(true)}
+      />
 
       {/* Create New Community Modal */}
       <Modal

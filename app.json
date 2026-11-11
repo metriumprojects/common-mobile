@@ -9,17 +9,13 @@
     "userInterfaceStyle": "light",
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.common.community"
+      "bundleIdentifier": "com.common.community",
+      "buildNumber": "1"
     },
     "android": {
       "package": "com.common.community",
       "adaptiveIcon": {
         "backgroundColor": "#F8F9FA"
-      }
-    },
-    "extra": {
-      "eas": {
-        "projectId": "5f6f5d57-66b9-40e7-90b7-5dbf6bc5baed"
       }
     }
   }

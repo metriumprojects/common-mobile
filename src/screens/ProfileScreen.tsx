@@ -18,6 +18,7 @@ import { mobileApi } from '../api/client';
 import { mobileSocket } from '../api/socket';
 import { Community, UserProfile } from '../types';
 import { useAuth } from '../context/AuthContext';
+import BottomNav from '../components/BottomNav';
 
 const AVATAR_COLORS = [
   '#059669',
@@ -217,7 +218,7 @@ export default function ProfileScreen() {
   const displayColor = profile?.avatarColor || '#059669';
 
   return (
-    <SafeAreaView style={styles.safeArea}>
+    <SafeAreaView edges={['top']} style={styles.safeArea}>
       {/* Top Header */}
       <View style={styles.topHeader}>
         <TouchableOpacity
@@ -526,6 +527,12 @@ export default function ProfileScreen() {
           </View>
         </View>
       </Modal>
+      {/* Unified Figma Bottom Navigation Bar */}
+      <BottomNav
+        activeTab="Profile"
+        navigation={navigation}
+        onCommunityCreated={() => fetchData()}
+      />
     </SafeAreaView>
   );
 }
