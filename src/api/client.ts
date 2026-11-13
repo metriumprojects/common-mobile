@@ -35,7 +35,7 @@ apiClient.interceptors.response.use(
     const config = error?.config;
     const method = (config?.method || "").toLowerCase();
     const status = error?.response?.status;
-    const isTransient = !status || status === 502 || status === 503 || status === 504;
+    const isTransient = !status || status === 429 || status === 502 || status === 503 || status === 504;
     if (config && method === "get" && isTransient) {
       config.__retryCount = (config.__retryCount || 0) + 1;
       if (config.__retryCount <= 2) {
