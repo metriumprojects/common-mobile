@@ -59,6 +59,9 @@ export default function BottomNav({
           style={styles.navItem}
           onPress={() => go('Home')}
           activeOpacity={0.7}
+          accessibilityRole="tab"
+          accessibilityLabel="My Space"
+          accessibilityState={{ selected: activeTab === 'Home' }}
         >
           <HomeIcon
             size={21}
@@ -80,6 +83,9 @@ export default function BottomNav({
           style={styles.navItem}
           onPress={() => go('Discover')}
           activeOpacity={0.7}
+          accessibilityRole="tab"
+          accessibilityLabel="Discover"
+          accessibilityState={{ selected: activeTab === 'Discover' }}
         >
           <CompassIcon
             size={21}
@@ -103,6 +109,8 @@ export default function BottomNav({
           style={styles.navCenterItem}
           onPress={handleCreate}
           activeOpacity={0.85}
+          accessibilityRole="button"
+          accessibilityLabel="Create community"
         >
           <View style={styles.navCreateCircle}>
             <PlusIcon size={22} color={figmaColors.brandLime} strokeWidth={1.85} />
@@ -115,6 +123,9 @@ export default function BottomNav({
           style={styles.navItem}
           onPress={() => go('Activity')}
           activeOpacity={0.7}
+          accessibilityRole="tab"
+          accessibilityLabel="Activity"
+          accessibilityState={{ selected: activeTab === 'Activity' }}
         >
           <View style={styles.iconWrap}>
             <BellIcon
@@ -141,6 +152,9 @@ export default function BottomNav({
           style={styles.navItem}
           onPress={() => go('Profile')}
           activeOpacity={0.7}
+          accessibilityRole="tab"
+          accessibilityLabel="Profile"
+          accessibilityState={{ selected: activeTab === 'Profile' }}
         >
           <UserIcon
             size={21}

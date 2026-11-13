@@ -13,6 +13,7 @@ import { useNavigation } from '@react-navigation/native';
 import { mobileApi } from '../api/client';
 import { mobileSocket } from '../api/socket';
 import { Community } from '../types';
+import { useAuth } from '../context/AuthContext';
 import BottomNav from '../components/BottomNav';
 import {
   ChevronLeftIcon,
@@ -41,6 +42,7 @@ interface ActivityItem {
 
 export default function ActivityScreen() {
   const navigation = useNavigation<any>();
+  const { user } = useAuth();
 
   const [communities, setCommunities] = useState<Community[]>([]);
   const [filter, setFilter] = useState<'all' | 'mentions' | 'sidechats' | 'events'>('all');
@@ -49,7 +51,7 @@ export default function ActivityScreen() {
 
   const fetchActivity = useCallback(async () => {
     try {
-      const data = await mobileApi.getCommunities();
+      const data = await mobileApi.getCommunities(user?.id);
       if (Array.isArray(data)) {
         setCommunities(data);
       }
@@ -59,7 +61,7 @@ export default function ActivityScreen() {
       setLoading(false);
       setRefreshing(false);
     }
-  }, []);
+  }, [user?.id]);
 
   useEffect(() => {
     fetchActivity();

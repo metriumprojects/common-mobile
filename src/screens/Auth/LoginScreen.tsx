@@ -37,21 +37,10 @@ export default function LoginScreen() {
   const finishSignIn = async (sessionId: string) => {
     await setActive!({ session: sessionId });
 
-    const syncRes = await mobileApi.syncUser({
-      clerkId: sessionId,
-      email: email.trim(),
-      name: email.split('@')[0],
-    });
-
     Toast.show({
       type: 'success',
       text1: 'Welcome back',
-      text2: `Logged in as ${syncRes.name || email}`,
-    });
-
-    navigation.reset({
-      index: 0,
-      routes: [{ name: 'Home' }],
+      text2: `Logged in as ${email.trim()}`,
     });
   };
 

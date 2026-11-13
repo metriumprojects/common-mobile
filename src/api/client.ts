@@ -273,4 +273,9 @@ export const mobileApi = {
     const res = await apiClient.post<Community>("/communities", data);
     return res.data;
   },
+
+  async deleteAccount(): Promise<{ success: boolean; deletedUserId: string }> {
+    const res = await apiClient.delete("/users/me");
+    return res.data;
+  },
 };

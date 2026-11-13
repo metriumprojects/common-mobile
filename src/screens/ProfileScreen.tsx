@@ -9,6 +9,7 @@ import {
   Modal,
   TextInput,
   Switch,
+  Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
@@ -71,12 +72,13 @@ export default function ProfileScreen() {
   const [editBio, setEditBio] = useState('');
   const [editColor, setEditColor] = useState('#059669');
   const [saving, setSaving] = useState(false);
+  const [deletingAccount, setDeletingAccount] = useState(false);
 
   const fetchData = useCallback(async () => {
     try {
       const [uRes, commRes, healthRes] = await Promise.all([
         mobileApi.getCurrentUser(user?.id).catch(() => null),
-        mobileApi.getCommunities().catch(() => []),
+        mobileApi.getCommunities(user?.id).catch(() => []),
         mobileApi.getHealth().catch(() => null),
       ]);
 
@@ -186,21 +188,49 @@ export default function ProfileScreen() {
         text1: 'Signed Out',
         text2: 'You have been successfully logged out',
       });
-
-      navigation.reset({
-        index: 0,
-        routes: [{ name: 'Login' }],
-      });
     } catch (err) {
       console.warn('Sign out error:', err);
       await logout();
-      navigation.reset({
-        index: 0,
-        routes: [{ name: 'Login' }],
-      });
     } finally {
       setLoggingOut(false);
     }
+  };
+
+  const handleDeleteAccount = () => {
+    Alert.alert(
+      'Delete Account',
+      'This will permanently delete your Common profile, remove you from all communities, and delete your private side-chats. This action cannot be undone.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete Permanently',
+          style: 'destructive',
+          onPress: async () => {
+            setDeletingAccount(true);
+            try {
+              await mobileApi.deleteAccount();
+              if (signOut) {
+                await signOut();
+              }
+              await logout();
+              Toast.show({
+                type: 'info',
+                text1: 'Account Deleted',
+                text2: 'Your account and profile data have been removed.',
+              });
+            } catch (err) {
+              Toast.show({
+                type: 'error',
+                text1: 'Deletion Failed',
+                text2: 'Could not delete your account. Please try again.',
+              });
+            } finally {
+              setDeletingAccount(false);
+            }
+          },
+        },
+      ]
+    );
   };
 
   const joinedCommunities = communities.filter((c) => c.isJoined !== false);
@@ -433,17 +463,43 @@ export default function ProfileScreen() {
               </View>
             </View>
 
+            {/* Privacy & Data Handling */}
+            <View style={styles.sectionCard}>
+              <Text style={styles.sectionTitle}>PRIVACY & DATA</Text>
+              <Text style={styles.privacyText}>
+                Private side-chats are scoped strictly to you and the recipient. You can permanently delete your account and remove your profile data at any time below.
+              </Text>
+            </View>
+
             {/* Logout Button */}
             <TouchableOpacity
               style={[styles.logoutButton, loggingOut && styles.buttonDisabled]}
               onPress={handleSignOut}
-              disabled={loggingOut}
+              disabled={loggingOut || deletingAccount}
               activeOpacity={0.8}
+              accessibilityRole="button"
+              accessibilityLabel="Log Out"
             >
               {loggingOut ? (
                 <ActivityIndicator color="#EF4444" size="small" />
               ) : (
                 <Text style={styles.logoutButtonText}>Log Out</Text>
+              )}
+            </TouchableOpacity>
+
+            {/* Delete Account Button (App Store 5.1.1(v)) */}
+            <TouchableOpacity
+              style={[styles.deleteButton, deletingAccount && styles.buttonDisabled]}
+              onPress={handleDeleteAccount}
+              disabled={loggingOut || deletingAccount}
+              activeOpacity={0.8}
+              accessibilityRole="button"
+              accessibilityLabel="Delete Account"
+            >
+              {deletingAccount ? (
+                <ActivityIndicator color="#FFFFFF" size="small" />
+              ) : (
+                <Text style={styles.deleteButtonText}>Delete Account</Text>
               )}
             </TouchableOpacity>
           </>
@@ -822,6 +878,23 @@ const styles = StyleSheet.create({
   },
   logoutButtonText: {
     color: '#DC2626',
+    fontSize: 15,
+    fontWeight: '700',
+  },
+  privacyText: {
+    fontSize: 12,
+    lineHeight: 18,
+    color: '#6B7280',
+  },
+  deleteButton: {
+    backgroundColor: '#DC2626',
+    borderRadius: 12,
+    paddingVertical: 14,
+    alignItems: 'center',
+    marginTop: 10,
+  },
+  deleteButtonText: {
+    color: '#FFFFFF',
     fontSize: 15,
     fontWeight: '700',
   },

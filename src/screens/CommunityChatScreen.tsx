@@ -93,7 +93,7 @@ export default function CommunityChatScreen() {
 
   const fetchCommunityData = useCallback(async () => {
     try {
-      const all = await mobileApi.getCommunities();
+      const all = await mobileApi.getCommunities(user?.id);
       const current = all.find((c) => c.id === communityId) || all[0];
       if (current) {
         setCommunity(current);
@@ -104,7 +104,7 @@ export default function CommunityChatScreen() {
     } finally {
       setLoading(false);
     }
-  }, [communityId]);
+  }, [communityId, user?.id]);
 
   useEffect(() => {
     fetchCommunityData();
@@ -285,6 +285,12 @@ export default function CommunityChatScreen() {
       );
     } catch (err) {
       console.error('Error sending message:', err);
+      setInputText(textToSend);
+      Toast.show({
+        type: 'error',
+        text1: 'Message Failed',
+        text2: 'Could not send message. Please try again.',
+      });
     } finally {
       setSending(false);
     }

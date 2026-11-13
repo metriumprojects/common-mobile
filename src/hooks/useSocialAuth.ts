@@ -113,25 +113,10 @@ export function useSocialAuth() {
             .filter(Boolean)
             .join(' ') || email.split('@')[0];
 
-        try {
-          await mobileApi.syncUser({
-            clerkId: sessionId,
-            email,
-            name: fullName,
-          });
-        } catch {
-          // AuthContext syncs on mount if this transient call fails
-        }
-
         Toast.show({
           type: 'success',
           text1: 'Signed in',
           text2: `Welcome, ${fullName}`,
-        });
-
-        navigation.reset({
-          index: 0,
-          routes: [{ name: 'Home' }],
         });
         return;
       }

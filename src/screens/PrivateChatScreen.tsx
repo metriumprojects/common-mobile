@@ -246,6 +246,12 @@ export default function PrivateChatScreen() {
       );
     } catch (err) {
       console.error('Error sending private message:', err);
+      setInputText(textToSend);
+      Toast.show({
+        type: 'error',
+        text1: 'Message Failed',
+        text2: 'Could not send message. Please try again.',
+      });
     } finally {
       setSending(false);
     }

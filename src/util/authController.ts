@@ -18,10 +18,7 @@ export const getStoredToken = async (): Promise<string | null> => {
   try {
     // React Native environment
     const token = await AsyncStorage.getItem('authToken');
-     console.log("token at start",token);
     return token;
-   
-    
   } catch (error) {
     console.error('Error getting stored token:', error);
     return null;

@@ -99,22 +99,10 @@ export default function SignupScreen() {
         if (completeSignUp.status === 'complete') {
           await setActive({ session: completeSignUp.createdSessionId });
 
-          // Sync with MongoDB Atlas
-          await mobileApi.syncUser({
-            clerkId: completeSignUp.createdSessionId,
-            email: email.trim(),
-            name: fullName.trim(),
-          });
-
           Toast.show({
             type: 'success',
             text1: 'Account Verified',
             text2: 'Welcome to Common Community Platform',
-          });
-
-          navigation.reset({
-            index: 0,
-            routes: [{ name: 'Home' }],
           });
           return;
         }

@@ -12,7 +12,7 @@
       "channel": "preview",
       "distribution": "internal",
       "android": {
-        "buildType": "apk"
+        "buildType": "app-bundle"
       },
       "ios": {
         "simulator": false
@@ -32,7 +32,7 @@
         "image": "latest"
       },
       "android": {
-        "buildType": "apk"
+        "buildType": "app-bundle"
       },
       "env": {
         "EXPO_PUBLIC_API_URL": "https://common-backend-74ja.onrender.com/api",

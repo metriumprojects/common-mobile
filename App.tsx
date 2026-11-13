@@ -149,8 +149,8 @@ export default function App() {
         checkingRef.current = true;
         const update = await Updates.checkForUpdateAsync();
         if (update.isAvailable) {
+          // Download silently in background; EXUpdates applies on next cold launch
           await Updates.fetchUpdateAsync();
-          await Updates.reloadAsync();
         }
       } catch (err) {
         console.warn('[OTA] Update check skipped:', err);
