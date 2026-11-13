@@ -16,6 +16,12 @@ import { useNavigation } from '@react-navigation/native';
 import { useClerk } from '@clerk/clerk-expo';
 import Toast from 'react-native-toast-message';
 import { mobileApi } from '../api/client';
+import {
+  getCachedCommunities,
+  setCachedCommunities,
+  getCachedUser,
+  setCachedUser,
+} from '../api/dataCache';
 import { mobileSocket } from '../api/socket';
 import { Community, UserProfile } from '../types';
 import { useAuth } from '../context/AuthContext';
@@ -53,11 +59,17 @@ export default function ProfileScreen() {
   const { signOut } = useClerk();
   const { user, login, token, logout } = useAuth();
 
-  const [profile, setProfile] = useState<UserProfile | null>(null);
-  const [communities, setCommunities] = useState<Community[]>([]);
+  const [profile, setProfile] = useState<UserProfile | null>(
+    () => getCachedUser(user?.id)
+  );
+  const [communities, setCommunities] = useState<Community[]>(
+    () => getCachedCommunities(user?.id) || []
+  );
   const [dbStatus, setDbStatus] = useState('MongoDB Atlas Active');
   const [socketConnected, setSocketConnected] = useState(mobileSocket.connected);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(
+    () => !getCachedUser(user?.id) && !getCachedCommunities(user?.id)
+  );
   const [loggingOut, setLoggingOut] = useState(false);
 
   // Notification toggles
@@ -84,6 +96,7 @@ export default function ProfileScreen() {
 
       if (uRes) {
         setProfile(uRes);
+        setCachedUser(user?.id, uRes);
         setEditName(uRes.name || '');
         setEditRole(uRes.role || 'Verified Member');
         setEditBio(uRes.bio || 'Community Member & Builder');
@@ -97,6 +110,7 @@ export default function ProfileScreen() {
 
       if (Array.isArray(commRes)) {
         setCommunities(commRes);
+        setCachedCommunities(user?.id, commRes);
       }
 
       if (healthRes?.database) {
@@ -280,7 +294,7 @@ export default function ProfileScreen() {
       <ScrollView contentContainerStyle={styles.scrollContent}>
         {loading ? (
           <View style={styles.loadingContainer}>
-            <ActivityIndicator size="large" color="#10B981" />
+            <ActivityIndicator size="large" color={figmaColors.ink} />
           </View>
         ) : (
           <>

@@ -15,6 +15,11 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import Toast from 'react-native-toast-message';
 import { mobileApi } from '../api/client';
+import {
+  getCachedCommunities,
+  setCachedCommunities,
+  hydrateCommunitiesFromDisk,
+} from '../api/dataCache';
 import { mobileSocket } from '../api/socket';
 import { Community } from '../types';
 import { useAuth } from '../context/AuthContext';
@@ -51,19 +56,31 @@ export default function DiscoverScreen() {
     .map((n: string) => n[0]?.toUpperCase())
     .join('') || 'U';
 
-  const [communities, setCommunities] = useState<Community[]>([]);
+  const [communities, setCommunities] = useState<Community[]>(
+    () => getCachedCommunities(user?.id) || []
+  );
   const [searchTopic, setSearchTopic] = useState('');
   const [searchLocation, setSearchLocation] = useState('');
   const [activeFilter, setActiveFilter] = useState('trending');
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(
+    () => !getCachedCommunities(user?.id)
+  );
   const [refreshing, setRefreshing] = useState(false);
   const [togglingId, setTogglingId] = useState<string | null>(null);
 
   const fetchCommunities = useCallback(async () => {
     try {
+      if (!getCachedCommunities(user?.id)) {
+        const disk = await hydrateCommunitiesFromDisk(user?.id);
+        if (disk) {
+          setCommunities(disk);
+          setLoading(false);
+        }
+      }
       const data = await mobileApi.getCommunities(user?.id);
       if (Array.isArray(data)) {
         setCommunities(data);
+        setCachedCommunities(user?.id, data);
       }
     } catch (err) {
       console.warn('Error loading discover communities:', err);
@@ -518,7 +535,7 @@ export default function DiscoverScreen() {
       {/* Discover List */}
       {loading ? (
         <View style={styles.loadingBox}>
-          <ActivityIndicator size="large" color="#10B981" />
+          <ActivityIndicator size="large" color={figmaColors.ink} />
         </View>
       ) : (
         <FlatList

@@ -8,6 +8,7 @@ import {
 } from '../util/authController';
 import { useAuth as useClerkAuth, useUser as useClerkUser } from '@clerk/clerk-expo';
 import { mobileSocket } from '../api/socket';
+import { clearDataCache } from '../api/dataCache';
 
 interface AuthContextType {
   user: any;
@@ -51,6 +52,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       console.warn('[AuthContext] Error during Clerk signOut:', e);
     }
     await clearAuthData();
+    await clearDataCache();
     setToken(null);
     setUser(null);
     setIsAuthenticated(false);

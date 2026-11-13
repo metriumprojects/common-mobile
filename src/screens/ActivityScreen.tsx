@@ -11,6 +11,11 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { mobileApi } from '../api/client';
+import {
+  getCachedCommunities,
+  setCachedCommunities,
+  hydrateCommunitiesFromDisk,
+} from '../api/dataCache';
 import { mobileSocket } from '../api/socket';
 import { Community } from '../types';
 import { useAuth } from '../context/AuthContext';
@@ -44,16 +49,28 @@ export default function ActivityScreen() {
   const navigation = useNavigation<any>();
   const { user } = useAuth();
 
-  const [communities, setCommunities] = useState<Community[]>([]);
+  const [communities, setCommunities] = useState<Community[]>(
+    () => getCachedCommunities(user?.id) || []
+  );
   const [filter, setFilter] = useState<'all' | 'mentions' | 'sidechats' | 'events'>('all');
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(
+    () => !getCachedCommunities(user?.id)
+  );
   const [refreshing, setRefreshing] = useState(false);
 
   const fetchActivity = useCallback(async () => {
     try {
+      if (!getCachedCommunities(user?.id)) {
+        const disk = await hydrateCommunitiesFromDisk(user?.id);
+        if (disk) {
+          setCommunities(disk);
+          setLoading(false);
+        }
+      }
       const data = await mobileApi.getCommunities(user?.id);
       if (Array.isArray(data)) {
         setCommunities(data);
+        setCachedCommunities(user?.id, data);
       }
     } catch (err) {
       console.warn('Error fetching activity:', err);
@@ -317,7 +334,7 @@ export default function ActivityScreen() {
 
       {loading ? (
         <View style={styles.loadingBox}>
-          <ActivityIndicator size="large" color="#10B981" />
+          <ActivityIndicator size="large" color={figmaColors.ink} />
         </View>
       ) : (
         <FlatList

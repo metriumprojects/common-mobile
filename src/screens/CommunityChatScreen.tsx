@@ -1082,7 +1082,7 @@ export default function CommunityChatScreen() {
         {/* Message Stream */}
         {loading ? (
           <View style={styles.loadingContainer}>
-            <ActivityIndicator size="large" color="#10B981" />
+            <ActivityIndicator size="large" color={figmaColors.ink} />
           </View>
         ) : (
           <FlatList

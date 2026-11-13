@@ -16,6 +16,13 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import Toast from 'react-native-toast-message';
 import { mobileApi } from '../api/client';
+import {
+  getCachedCommunities,
+  setCachedCommunities,
+  hydrateCommunitiesFromDisk,
+  getCachedUser,
+  setCachedUser,
+} from '../api/dataCache';
 import { mobileSocket } from '../api/socket';
 import { Community, UserProfile } from '../types';
 import { useAuth } from '../context/AuthContext';
@@ -37,11 +44,17 @@ export default function HomeScreen() {
   const navigation = useNavigation<any>();
   const { user } = useAuth();
 
-  const [communities, setCommunities] = useState<Community[]>([]);
-  const [currentUser, setCurrentUser] = useState<UserProfile | null>(null);
+  const [communities, setCommunities] = useState<Community[]>(
+    () => getCachedCommunities(user?.id) || []
+  );
+  const [currentUser, setCurrentUser] = useState<UserProfile | null>(
+    () => getCachedUser(user?.id)
+  );
   const [searchQuery, setSearchQuery] = useState('');
   const [refreshing, setRefreshing] = useState(false);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(
+    () => !getCachedCommunities(user?.id)
+  );
 
   // Create Community Modal State
   const [showCreateModal, setShowCreateModal] = useState(false);
@@ -56,14 +69,23 @@ export default function HomeScreen() {
   const fetchCommunities = useCallback(async () => {
     try {
       setCurrentUser((prev) => (prev && prev.id !== user?.id ? null : prev));
+      if (!getCachedCommunities(user?.id)) {
+        const disk = await hydrateCommunitiesFromDisk(user?.id);
+        if (disk) {
+          setCommunities(disk);
+          setLoading(false);
+        }
+      }
       const data = await mobileApi.getCommunities(user?.id);
       if (data && Array.isArray(data)) {
         setCommunities(data);
+        setCachedCommunities(user?.id, data);
       }
       if (user?.id) {
         const userRes = await mobileApi.getCurrentUser(user.id);
         if (userRes) {
           setCurrentUser(userRes);
+          setCachedUser(user.id, userRes);
         }
       } else {
         setCurrentUser(null);
