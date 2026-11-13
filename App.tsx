@@ -11,7 +11,7 @@ import {
   AppStateStatus,
 } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
-import { NavigationContainer } from '@react-navigation/native';
+import { NavigationContainer, DefaultTheme } from '@react-navigation/native';
 import { createStackNavigator, TransitionPresets } from '@react-navigation/stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { ClerkProvider } from '@clerk/clerk-expo';
@@ -61,8 +61,17 @@ function RootNavigator() {
   if (loading) {
     return (
       <View style={styles.splashContainer}>
-        <ActivityIndicator size="large" color={figmaColors.ink} />
-        <Text style={styles.splashText}>Connecting to common...</Text>
+        <View style={styles.splashBrandRow}>
+          <Text style={styles.splashBrandText}>c</Text>
+          <View style={styles.splashLimeCircle} />
+          <Text style={styles.splashBrandText}>mmon</Text>
+        </View>
+        <Text style={styles.splashText}>Scoped communities & real-time chat</Text>
+        <ActivityIndicator
+          size="small"
+          color={figmaColors.ink}
+          style={styles.splashSpinner}
+        />
       </View>
     );
   }
@@ -183,7 +192,15 @@ export default function App() {
               backgroundColor={figmaColors.bg}
               translucent={false}
             />
-            <NavigationContainer>
+            <NavigationContainer
+              theme={{
+                ...DefaultTheme,
+                colors: {
+                  ...DefaultTheme.colors,
+                  background: figmaColors.bg,
+                },
+              }}
+            >
               <RootNavigator />
             </NavigationContainer>
             <Toast />
@@ -200,12 +217,36 @@ const styles = StyleSheet.create({
     backgroundColor: figmaColors.bg,
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 12,
+    gap: 10,
+  },
+  splashBrandRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  splashBrandText: {
+    fontSize: 34,
+    fontWeight: '800',
+    letterSpacing: -1.1,
+    color: figmaColors.ink,
+    lineHeight: 40,
+  },
+  splashLimeCircle: {
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    backgroundColor: figmaColors.brandLime,
+    borderWidth: 2.5,
+    borderColor: figmaColors.ink,
+    marginHorizontal: 2,
+    marginTop: 3,
   },
   splashText: {
     color: figmaColors.inkSecondary,
     fontSize: 13,
-    fontWeight: '600',
+    fontWeight: '500',
+  },
+  splashSpinner: {
+    marginTop: 14,
   },
   errorContainer: {
     flex: 1,

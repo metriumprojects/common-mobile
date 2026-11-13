@@ -18,6 +18,7 @@ import { mobileApi } from '../../api/client';
 import { useAuth } from '../../context/AuthContext';
 import { useSocialAuth } from '../../hooks/useSocialAuth';
 import { SocialAuthButtons } from '../../components/SocialAuthButtons';
+import { figmaColors, figmaShadows } from '../../theme/figmaTheme';
 
 export default function LoginScreen() {
   const navigation = useNavigation<any>();
@@ -193,15 +194,18 @@ export default function LoginScreen() {
         <ScrollView
           contentContainerStyle={styles.scrollContent}
           keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
         >
-          {/* Header */}
+          {/* Brand Header */}
           <View style={styles.header}>
-            <View style={styles.badgeContainer}>
-              <Text style={styles.badgeText}>COMMUNITY PLATFORM</Text>
+            <View style={styles.brandRow}>
+              <Text style={styles.brandText}>c</Text>
+              <View style={styles.brandLimeCircle} />
+              <Text style={styles.brandText}>mmon</Text>
             </View>
-            <Text style={styles.title}>Sign in</Text>
+            <Text style={styles.title}>Welcome back</Text>
             <Text style={styles.subtitle}>
-              Access your scoped community spaces and real-time channels
+              Sign in to your communities and private side-chats
             </Text>
           </View>
 
@@ -263,13 +267,57 @@ export default function LoginScreen() {
                   onPressProvider={(strategy) => handleSocialAuth(strategy, setErrorMsg)}
                 />
 
+                {/* Auth Mode Segmented Pill */}
+                <View style={styles.modeSegment}>
+                  <TouchableOpacity
+                    style={[
+                      styles.modeSegmentItem,
+                      !useEmailCode && styles.modeSegmentItemActive,
+                    ]}
+                    onPress={() => {
+                      setUseEmailCode(false);
+                      setErrorMsg('');
+                    }}
+                    activeOpacity={0.8}
+                  >
+                    <Text
+                      style={[
+                        styles.modeSegmentText,
+                        !useEmailCode && styles.modeSegmentTextActive,
+                      ]}
+                    >
+                      Password
+                    </Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={[
+                      styles.modeSegmentItem,
+                      useEmailCode && styles.modeSegmentItemActive,
+                    ]}
+                    onPress={() => {
+                      setUseEmailCode(true);
+                      setErrorMsg('');
+                    }}
+                    activeOpacity={0.8}
+                  >
+                    <Text
+                      style={[
+                        styles.modeSegmentText,
+                        useEmailCode && styles.modeSegmentTextActive,
+                      ]}
+                    >
+                      Email Code
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+
                 {/* Email Field */}
                 <View style={styles.inputGroup}>
                   <Text style={styles.label}>Email address</Text>
                   <TextInput
                     style={styles.input}
                     placeholder="name@example.com"
-                    placeholderTextColor="#94A3B8"
+                    placeholderTextColor={figmaColors.inkMuted}
                     keyboardType="email-address"
                     autoCapitalize="none"
                     autoCorrect={false}
@@ -284,23 +332,12 @@ export default function LoginScreen() {
                 {/* Password Field */}
                 {!useEmailCode ? (
                   <View style={styles.inputGroup}>
-                    <View style={styles.labelRow}>
-                      <Text style={styles.label}>Password</Text>
-                      <TouchableOpacity
-                        onPress={() => {
-                          setUseEmailCode(true);
-                          setErrorMsg('');
-                        }}
-                        activeOpacity={0.7}
-                      >
-                        <Text style={styles.modeSwitchLink}>Use email code</Text>
-                      </TouchableOpacity>
-                    </View>
+                    <Text style={styles.label}>Password</Text>
                     <View style={styles.passwordInputWrapper}>
                       <TextInput
                         style={[styles.input, styles.passwordInput]}
                         placeholder="Enter your password"
-                        placeholderTextColor="#94A3B8"
+                        placeholderTextColor={figmaColors.inkMuted}
                         secureTextEntry={!showPassword}
                         autoCapitalize="none"
                         value={password}
@@ -320,18 +357,7 @@ export default function LoginScreen() {
                       </TouchableOpacity>
                     </View>
                   </View>
-                ) : (
-                  <TouchableOpacity
-                    style={styles.modeToggleBtn}
-                    onPress={() => {
-                      setUseEmailCode(false);
-                      setErrorMsg('');
-                    }}
-                    activeOpacity={0.7}
-                  >
-                    <Text style={styles.modeSwitchLink}>Use password instead</Text>
-                  </TouchableOpacity>
-                )}
+                ) : null}
 
                 {/* Sign In Button */}
                 <TouchableOpacity
@@ -374,7 +400,7 @@ export default function LoginScreen() {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: '#0F172A',
+    backgroundColor: figmaColors.bg,
   },
   keyboardContainer: {
     flex: 1,
@@ -382,80 +408,112 @@ const styles = StyleSheet.create({
   scrollContent: {
     flexGrow: 1,
     justifyContent: 'center',
-    paddingHorizontal: 24,
-    paddingVertical: 32,
+    paddingHorizontal: 20,
+    paddingVertical: 28,
   },
   header: {
-    marginBottom: 32,
+    marginBottom: 24,
+    paddingHorizontal: 4,
   },
-  badgeContainer: {
-    alignSelf: 'flex-start',
-    backgroundColor: '#1E293B',
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 6,
-    marginBottom: 12,
+  brandRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 14,
   },
-  badgeText: {
-    color: '#94A3B8',
-    fontSize: 11,
-    fontWeight: '600',
-    letterSpacing: 0.5,
+  brandText: {
+    fontSize: 28,
+    fontWeight: '800',
+    letterSpacing: -0.9,
+    color: figmaColors.ink,
+    lineHeight: 32,
+  },
+  brandLimeCircle: {
+    width: 18,
+    height: 18,
+    borderRadius: 9,
+    backgroundColor: figmaColors.brandLime,
+    borderWidth: 2,
+    borderColor: figmaColors.ink,
+    marginHorizontal: 1.5,
+    marginTop: 2,
   },
   title: {
-    fontSize: 28,
+    fontSize: 26,
     fontWeight: '700',
-    color: '#F8FAFC',
-    marginBottom: 8,
+    color: figmaColors.ink,
+    letterSpacing: -0.4,
+    marginBottom: 6,
   },
   subtitle: {
     fontSize: 14,
-    color: '#94A3B8',
+    color: figmaColors.inkSecondary,
     lineHeight: 20,
   },
   form: {
-    backgroundColor: '#1E293B',
-    padding: 24,
-    borderRadius: 16,
+    backgroundColor: '#FFFFFF',
+    padding: 22,
+    borderRadius: 20,
     borderWidth: 1,
-    borderColor: '#334155',
+    borderColor: figmaColors.border,
+    ...figmaShadows.card,
   },
   errorBanner: {
-    backgroundColor: '#451A1A',
+    backgroundColor: '#FEF2F2',
     borderWidth: 1,
-    borderColor: '#7F1D1D',
+    borderColor: '#FECACA',
     padding: 12,
-    borderRadius: 8,
+    borderRadius: 10,
     marginBottom: 16,
   },
   errorBannerText: {
-    color: '#FCA5A5',
+    color: '#B91C1C',
     fontSize: 13,
     lineHeight: 18,
+    fontWeight: '500',
   },
-  inputGroup: {
-    marginBottom: 20,
-  },
-  labelRow: {
+  modeSegment: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
+    backgroundColor: '#F3F4F6',
+    borderRadius: 10,
+    padding: 3,
+    marginBottom: 18,
+  },
+  modeSegmentItem: {
+    flex: 1,
+    paddingVertical: 8,
+    borderRadius: 8,
     alignItems: 'center',
   },
-  label: {
-    color: '#E2E8F0',
+  modeSegmentItemActive: {
+    backgroundColor: '#FFFFFF',
+    ...figmaShadows.card,
+  },
+  modeSegmentText: {
     fontSize: 13,
-    fontWeight: '500',
-    marginBottom: 8,
+    fontWeight: '600',
+    color: figmaColors.inkSecondary,
+  },
+  modeSegmentTextActive: {
+    color: figmaColors.ink,
+  },
+  inputGroup: {
+    marginBottom: 16,
+  },
+  label: {
+    color: figmaColors.ink,
+    fontSize: 13,
+    fontWeight: '600',
+    marginBottom: 7,
   },
   input: {
-    backgroundColor: '#0F172A',
+    backgroundColor: '#F9FAFB',
     borderWidth: 1,
-    borderColor: '#334155',
-    borderRadius: 10,
+    borderColor: figmaColors.border,
+    borderRadius: 12,
     paddingHorizontal: 14,
     paddingVertical: 12,
     fontSize: 15,
-    color: '#F8FAFC',
+    color: figmaColors.ink,
   },
   passwordInputWrapper: {
     position: 'relative',
@@ -466,23 +524,23 @@ const styles = StyleSheet.create({
   },
   toggleVisibilityBtn: {
     position: 'absolute',
-    right: 14,
+    right: 12,
     paddingVertical: 6,
-    paddingHorizontal: 6,
+    paddingHorizontal: 8,
   },
   toggleVisibilityText: {
-    color: '#94A3B8',
+    color: figmaColors.inkSecondary,
     fontSize: 13,
-    fontWeight: '500',
+    fontWeight: '600',
   },
   primaryButton: {
-    backgroundColor: '#059669',
-    borderRadius: 10,
+    backgroundColor: figmaColors.ink,
+    borderRadius: 12,
     paddingVertical: 14,
     alignItems: 'center',
     justifyContent: 'center',
-    marginTop: 8,
-    marginBottom: 16,
+    marginTop: 6,
+    marginBottom: 18,
   },
   buttonDisabled: {
     opacity: 0.6,
@@ -490,7 +548,7 @@ const styles = StyleSheet.create({
   primaryButtonText: {
     color: '#FFFFFF',
     fontSize: 15,
-    fontWeight: '600',
+    fontWeight: '700',
   },
   footerRow: {
     flexDirection: 'row',
@@ -499,19 +557,14 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   footerText: {
-    color: '#94A3B8',
+    color: figmaColors.inkSecondary,
     fontSize: 13,
   },
   linkText: {
-    color: '#10B981',
+    color: figmaColors.ink,
     fontSize: 13,
-    fontWeight: '600',
-  },
-  modeSwitchLink: {
-    color: '#10B981',
-    fontSize: 12,
-    fontWeight: '600',
-    marginBottom: 8,
+    fontWeight: '700',
+    textDecorationLine: 'underline',
   },
   modeToggleBtn: {
     alignItems: 'center',
