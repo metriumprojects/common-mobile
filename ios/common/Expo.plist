@@ -7,7 +7,7 @@
     <key>EXUpdatesEnabled</key>
     <true/>
     <key>EXUpdatesLaunchWaitMs</key>
-    <integer>0</integer>
+    <integer>5000</integer>
     <key>EXUpdatesRequestHeaders</key>
     <dict>
       <key>expo-channel-name</key>
@@ -19,4 +19,3 @@
     <string>https://u.expo.dev/82c203e7-cbdf-4567-8db6-1f2c50b16c04</string>
   </dict>
 </plist>
-
