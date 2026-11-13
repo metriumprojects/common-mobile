@@ -1,15 +1,27 @@
 import 'react-native-gesture-handler';
-import React from 'react';
-import { StatusBar, View, ActivityIndicator, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import React, { useEffect, useRef } from 'react';
+import {
+  StatusBar,
+  View,
+  ActivityIndicator,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+  AppState,
+  AppStateStatus,
+} from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { NavigationContainer } from '@react-navigation/native';
-import { createStackNavigator } from '@react-navigation/stack';
+import { createStackNavigator, TransitionPresets } from '@react-navigation/stack';
+import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { ClerkProvider } from '@clerk/clerk-expo';
 import Toast from 'react-native-toast-message';
+import * as Updates from 'expo-updates';
 
 import { APP_CONFIG } from './src/config/appConfig';
 import { tokenCache } from './src/util/tokenCache';
 import { AuthProvider, useAuth } from './src/context/AuthContext';
+import { figmaColors } from './src/theme/figmaTheme';
 
 import LoginScreen from './src/screens/Auth/LoginScreen';
 import SignupScreen from './src/screens/Auth/SignupScreen';
@@ -22,6 +34,26 @@ import ActivityScreen from './src/screens/ActivityScreen';
 import ProfileScreen from './src/screens/ProfileScreen';
 
 const Stack = createStackNavigator();
+const Tab = createBottomTabNavigator();
+
+function MainTabs() {
+  return (
+    <Tab.Navigator
+      tabBar={() => null}
+      screenOptions={{
+        headerShown: false,
+        animation: 'none',
+        lazy: false,
+        sceneStyle: { backgroundColor: figmaColors.bg },
+      }}
+    >
+      <Tab.Screen name="Home" component={HomeScreen} />
+      <Tab.Screen name="Discover" component={DiscoverScreen} />
+      <Tab.Screen name="Activity" component={ActivityScreen} />
+      <Tab.Screen name="Profile" component={ProfileScreen} />
+    </Tab.Navigator>
+  );
+}
 
 function RootNavigator() {
   const { isAuthenticated, loading } = useAuth();
@@ -29,7 +61,7 @@ function RootNavigator() {
   if (loading) {
     return (
       <View style={styles.splashContainer}>
-        <ActivityIndicator size="large" color="#10B981" />
+        <ActivityIndicator size="large" color={figmaColors.ink} />
         <Text style={styles.splashText}>Connecting to common...</Text>
       </View>
     );
@@ -39,7 +71,9 @@ function RootNavigator() {
     <Stack.Navigator
       screenOptions={{
         headerShown: false,
-        cardStyle: { backgroundColor: '#F8F9FA' },
+        cardStyle: { backgroundColor: figmaColors.bg },
+        ...TransitionPresets.SlideFromRightIOS,
+        gestureEnabled: true,
       }}
     >
       {!isAuthenticated ? (
@@ -49,13 +83,14 @@ function RootNavigator() {
         </>
       ) : (
         <>
-          <Stack.Screen name="Home" component={HomeScreen} />
-          <Stack.Screen name="Discover" component={DiscoverScreen} />
+          <Stack.Screen
+            name="MainTabs"
+            component={MainTabs}
+            options={{ animation: 'none' }}
+          />
           <Stack.Screen name="CommunityChat" component={CommunityChatScreen} />
           <Stack.Screen name="CommunityInbox" component={CommunityInboxScreen} />
           <Stack.Screen name="PrivateChat" component={PrivateChatScreen} />
-          <Stack.Screen name="Activity" component={ActivityScreen} />
-          <Stack.Screen name="Profile" component={ProfileScreen} />
         </>
       )}
     </Stack.Navigator>
@@ -104,6 +139,37 @@ class RootErrorBoundary extends React.Component<
 }
 
 export default function App() {
+  const checkingRef = useRef(false);
+
+  useEffect(() => {
+    const checkAndApplyOTA = async () => {
+      if (__DEV__ || checkingRef.current) return;
+      try {
+        if (!Updates.isEnabled) return;
+        checkingRef.current = true;
+        const update = await Updates.checkForUpdateAsync();
+        if (update.isAvailable) {
+          await Updates.fetchUpdateAsync();
+          await Updates.reloadAsync();
+        }
+      } catch (err) {
+        console.warn('[OTA] Update check skipped:', err);
+      } finally {
+        checkingRef.current = false;
+      }
+    };
+
+    checkAndApplyOTA();
+
+    const sub = AppState.addEventListener('change', (state: AppStateStatus) => {
+      if (state === 'active') {
+        checkAndApplyOTA();
+      }
+    });
+
+    return () => sub.remove();
+  }, []);
+
   return (
     <SafeAreaProvider>
       <RootErrorBoundary>
@@ -114,7 +180,7 @@ export default function App() {
           <AuthProvider>
             <StatusBar
               barStyle="dark-content"
-              backgroundColor="#F8F9FA"
+              backgroundColor={figmaColors.bg}
               translucent={false}
             />
             <NavigationContainer>
@@ -131,37 +197,37 @@ export default function App() {
 const styles = StyleSheet.create({
   splashContainer: {
     flex: 1,
-    backgroundColor: '#F8F9FA',
+    backgroundColor: figmaColors.bg,
     alignItems: 'center',
     justifyContent: 'center',
     gap: 12,
   },
   splashText: {
-    color: '#6B7280',
+    color: figmaColors.inkSecondary,
     fontSize: 13,
     fontWeight: '600',
   },
   errorContainer: {
     flex: 1,
-    backgroundColor: '#F8F9FA',
+    backgroundColor: figmaColors.bg,
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: 24,
     gap: 12,
   },
   errorTitle: {
-    color: '#111827',
+    color: figmaColors.ink,
     fontSize: 18,
     fontWeight: '700',
   },
   errorMessage: {
-    color: '#6B7280',
+    color: figmaColors.inkSecondary,
     fontSize: 14,
     textAlign: 'center',
   },
   retryButton: {
     marginTop: 8,
-    backgroundColor: '#10B981',
+    backgroundColor: figmaColors.inkButton,
     paddingHorizontal: 20,
     paddingVertical: 10,
     borderRadius: 10,
