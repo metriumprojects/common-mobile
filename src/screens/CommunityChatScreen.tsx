@@ -1140,6 +1140,25 @@ export default function CommunityChatScreen() {
         </TouchableOpacity>
 
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+          {isCommunityAdmin ? (
+            <TouchableOpacity
+              style={{
+                backgroundColor: '#ECFDF5',
+                borderWidth: 1,
+                borderColor: '#A7F3D0',
+                paddingHorizontal: 8,
+                paddingVertical: 5,
+                borderRadius: 999,
+              }}
+              onPress={() => setShowInfoModal(true)}
+              activeOpacity={0.75}
+            >
+              <Text style={{ fontSize: 11, fontWeight: '700', color: '#065F46' }}>
+                ⚙️ Admin
+              </Text>
+            </TouchableOpacity>
+          ) : null}
+
           <TouchableOpacity
             style={styles.infoIconButton}
             onPress={() => {
@@ -1862,6 +1881,19 @@ export default function CommunityChatScreen() {
 
               {isCommunityAdmin ? (
                 <>
+                  <Text
+                    style={{
+                      fontSize: 12,
+                      fontWeight: '800',
+                      color: '#065F46',
+                      letterSpacing: 0.5,
+                      marginBottom: 8,
+                      marginTop: 4,
+                    }}
+                  >
+                    🛡️ COMMUNITY ADMIN CONTROLS
+                  </Text>
+
                   <TouchableOpacity
                     style={styles.infoActionPrimary}
                     onPress={() => {
@@ -1874,9 +1906,35 @@ export default function CommunityChatScreen() {
                     }}
                   >
                     <Text style={styles.infoActionPrimaryText}>
-                      Edit Community Details
+                      ✏️ Edit Community Details
                     </Text>
                   </TouchableOpacity>
+
+                  <View style={{ flexDirection: 'row', gap: 8, marginBottom: 8 }}>
+                    <TouchableOpacity
+                      style={[styles.infoActionSecondary, { flex: 1, marginBottom: 0 }]}
+                      onPress={() => {
+                        setPinText(community?.pinnedNotice?.text || '');
+                        setShowInfoModal(false);
+                        setTimeout(() => setManageMode('pin'), 320);
+                      }}
+                    >
+                      <Text style={styles.infoActionSecondaryText}>📌 Pin Notice</Text>
+                    </TouchableOpacity>
+
+                    <TouchableOpacity
+                      style={[styles.infoActionSecondary, { flex: 1, marginBottom: 0 }]}
+                      onPress={() => {
+                        setEventTag(community?.event?.tag || '');
+                        setEventTitle(community?.event?.title || '');
+                        setEventLocation(community?.event?.location || '');
+                        setShowInfoModal(false);
+                        setTimeout(() => setManageMode('event'), 320);
+                      }}
+                    >
+                      <Text style={styles.infoActionSecondaryText}>📅 Event</Text>
+                    </TouchableOpacity>
+                  </View>
 
                   <TouchableOpacity
                     style={[
