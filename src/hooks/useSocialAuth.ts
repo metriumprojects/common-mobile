@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { Platform } from 'react-native';
 import * as WebBrowser from 'expo-web-browser';
 import * as AuthSession from 'expo-auth-session';
-import { useSSO } from '@clerk/clerk-expo';
+import { useClerk, useSignIn, useSignUp } from '@clerk/clerk-expo';
 import { useNavigation } from '@react-navigation/native';
 import Toast from 'react-native-toast-message';
 import { mobileApi } from '../api/client';
@@ -11,9 +11,21 @@ WebBrowser.maybeCompleteAuthSession();
 
 export type OAuthStrategy = 'oauth_google' | 'oauth_apple';
 
+function extractQueryParam(url: string, key: string): string {
+  try {
+    const parsed = new URL(url);
+    return parsed.searchParams.get(key) || '';
+  } catch {
+    const match = url.match(new RegExp(`[?&]${key}=([^&#]*)`));
+    return match ? decodeURIComponent(match[1]) : '';
+  }
+}
+
 export function useSocialAuth() {
   const navigation = useNavigation<any>();
-  const { startSSOFlow } = useSSO();
+  const clerk = useClerk();
+  const { signIn, setActive, isLoaded: isSignInLoaded } = useSignIn();
+  const { signUp, isLoaded: isSignUpLoaded } = useSignUp();
   const [oauthLoading, setOauthLoading] = useState<OAuthStrategy | null>(null);
 
   useEffect(() => {
@@ -30,6 +42,11 @@ export function useSocialAuth() {
     onError?: (msg: string) => void
   ) => {
     if (oauthLoading) return;
+    if (!isSignInLoaded || !isSignUpLoaded || !signIn || !signUp) {
+      onError?.('Authentication service is still loading. Please try again.');
+      return;
+    }
+
     setOauthLoading(strategy);
     onError?.('');
 
@@ -39,25 +56,66 @@ export function useSocialAuth() {
         path: 'sso-callback',
       });
 
-      const { createdSessionId, setActive, signIn, signUp } = await startSSOFlow({
+      const createdSignIn = await signIn.create({
         strategy,
         redirectUrl,
       });
 
-      if (createdSessionId && setActive) {
-        await setActive({ session: createdSessionId });
+      const activeSignIn = createdSignIn || clerk.client?.signIn || signIn;
+      const authUrl =
+        activeSignIn?.firstFactorVerification?.externalVerificationRedirectURL?.toString();
+
+      if (!authUrl) {
+        const verificationError =
+          activeSignIn?.firstFactorVerification?.error?.longMessage ||
+          activeSignIn?.firstFactorVerification?.error?.message;
+        throw new Error(
+          verificationError ||
+            `Could not start ${strategy === 'oauth_apple' ? 'Apple' : 'Google'} sign-in (status: ${activeSignIn?.status || 'unknown'}).`
+        );
+      }
+
+      const authSessionResult = await WebBrowser.openAuthSessionAsync(
+        authUrl,
+        redirectUrl
+      );
+
+      if (authSessionResult.type !== 'success' || !authSessionResult.url) {
+        return;
+      }
+
+      const rotatingTokenNonce = extractQueryParam(
+        authSessionResult.url,
+        'rotating_token_nonce'
+      );
+
+      const reloadedSignIn = await activeSignIn.reload({ rotatingTokenNonce });
+      const finalSignIn = reloadedSignIn || clerk.client?.signIn || activeSignIn;
+
+      let sessionId = finalSignIn?.createdSessionId || null;
+      let resolvedSignUp = signUp;
+
+      if (!sessionId && finalSignIn?.firstFactorVerification?.status === 'transferable') {
+        const createdSignUp = await signUp.create({ transfer: true });
+        resolvedSignUp = createdSignUp || clerk.client?.signUp || signUp;
+        sessionId = resolvedSignUp?.createdSessionId || null;
+      }
+
+      if (sessionId && setActive) {
+        await setActive({ session: sessionId });
 
         const email =
-          signUp?.emailAddress ||
-          signIn?.identifier ||
-          `${strategy === 'oauth_apple' ? 'apple' : 'google'}-${createdSessionId.slice(-6)}@common.app`;
+          resolvedSignUp?.emailAddress ||
+          finalSignIn?.identifier ||
+          `${strategy === 'oauth_apple' ? 'apple' : 'google'}-${sessionId.slice(-6)}@common.app`;
         const fullName =
-          [signUp?.firstName, signUp?.lastName].filter(Boolean).join(' ') ||
-          email.split('@')[0];
+          [resolvedSignUp?.firstName, resolvedSignUp?.lastName]
+            .filter(Boolean)
+            .join(' ') || email.split('@')[0];
 
         try {
           await mobileApi.syncUser({
-            clerkId: createdSessionId,
+            clerkId: sessionId,
             email,
             name: fullName,
           });
@@ -78,9 +136,7 @@ export function useSocialAuth() {
         return;
       }
 
-      const missingMsg =
-        'Additional sign-in steps are required. Please try email sign-in or finish verification.';
-      onError?.(missingMsg);
+      onError?.('Could not complete sign-in. Please try again.');
     } catch (err: any) {
       const message =
         err?.errors?.[0]?.longMessage ||
