@@ -194,6 +194,18 @@ export default function DiscoverScreen() {
         ? item.privateChats[0]
         : null;
 
+    const groupSenders = Array.from(
+      new Set(
+        (item.groupMessages || [])
+          .map((m) => m.senderName?.trim()?.[0]?.toUpperCase())
+          .filter(Boolean)
+      )
+    ).slice(0, 3);
+    const privatePeers = (item.privateChats || [])
+      .map((pc) => pc.recipient?.name?.trim()?.[0]?.toUpperCase())
+      .filter(Boolean)
+      .slice(0, 3);
+
     return (
       <View style={styles.communityCard}>
         {/* Top Community Profile Header */}
@@ -215,43 +227,45 @@ export default function DiscoverScreen() {
             />
             <View style={styles.onlineBadge}>
               <Text style={styles.onlineBadgeText}>
-                {item.onlineCount || 86}
+                {item.onlineCount ?? 0}
               </Text>
             </View>
           </View>
 
           <View style={styles.communityInfo}>
             <View style={styles.categoryOnlineRow}>
-              <Text style={styles.categoryLabel}>{item.category || 'SPORT'}</Text>
+              <Text style={styles.categoryLabel}>{item.category || 'COMMUNITY'}</Text>
               <Text style={styles.metaDot}>•</Text>
               <View style={styles.greenOnlineDot} />
-              <Text style={styles.onlineLabel}>{item.onlineCount || 86} online</Text>
+              <Text style={styles.onlineLabel}>{item.onlineCount ?? 0} online</Text>
             </View>
 
             <View style={styles.titleRow}>
               <Text style={styles.communityName} numberOfLines={1}>
                 {item.name}
               </Text>
-              {item.verified !== false ? <VerifiedBadge size={16} /> : null}
+              {item.verified ? <VerifiedBadge size={16} /> : null}
             </View>
 
             <Text style={styles.communityDesc} numberOfLines={1}>
-              {item.description || 'Slow miles, fast friends...'}
+              {item.description || 'Community space'}
             </Text>
 
             <View style={styles.metaStatsRow}>
               <View style={styles.metaStatItem}>
                 <UsersIcon size={13} color={figmaColors.inkSecondary} />
                 <Text style={styles.metaStatText}>
-                  {item.memberCount || '2.4k'} members
+                  {item.memberCount ?? 0} members
                 </Text>
               </View>
-              <View style={styles.metaStatItem}>
-                <PinIcon size={13} color={figmaColors.inkSecondary} />
-                <Text style={styles.metaStatText} numberOfLines={1}>
-                  {item.location || 'Prospect Park'}
-                </Text>
-              </View>
+              {item.location ? (
+                <View style={styles.metaStatItem}>
+                  <PinIcon size={13} color={figmaColors.inkSecondary} />
+                  <Text style={styles.metaStatText} numberOfLines={1}>
+                    {item.location}
+                  </Text>
+                </View>
+              ) : null}
             </View>
           </View>
 
@@ -293,28 +307,41 @@ export default function DiscoverScreen() {
             activeOpacity={0.65}
           >
             <View style={styles.avatarStack}>
-              <View style={[styles.avatarStackItem, { backgroundColor: '#A7F3D0', zIndex: 3 }]}>
-                <Text style={styles.avatarStackText}>A</Text>
-              </View>
-              <View style={[styles.avatarStackItem, { backgroundColor: '#FEF08A', zIndex: 2, marginLeft: -8 }]}>
-                <Text style={styles.avatarStackText}>S</Text>
-              </View>
-              <View style={[styles.avatarStackItem, { backgroundColor: '#E2E8F0', zIndex: 1, marginLeft: -8 }]}>
-                <Text style={styles.avatarStackText}>+</Text>
-              </View>
+              {groupSenders.length > 0 ? (
+                groupSenders.map((initial, idx) => (
+                  <View
+                    key={`${initial}-${idx}`}
+                    style={[
+                      styles.avatarStackItem,
+                      {
+                        backgroundColor:
+                          idx === 0 ? '#A7F3D0' : idx === 1 ? '#FEF08A' : '#DDD6FE',
+                        zIndex: 3 - idx,
+                        marginLeft: idx === 0 ? 0 : -8,
+                      },
+                    ]}
+                  >
+                    <Text style={styles.avatarStackText}>{initial}</Text>
+                  </View>
+                ))
+              ) : (
+                <View style={[styles.avatarStackItem, { backgroundColor: figmaColors.limeSoft }]}>
+                  <ChatBubbleIcon size={12} color={figmaColors.ink} />
+                </View>
+              )}
             </View>
 
             <View style={styles.channelContent}>
               <View style={styles.channelTitleRow}>
                 <Text style={styles.channelTagLabel}>GROUP CHAT</Text>
-                <Text style={styles.channelTime}>
-                  {lastGroupMsg?.timestamp || '2m'}
-                </Text>
+                {lastGroupMsg?.timestamp ? (
+                  <Text style={styles.channelTime}>{lastGroupMsg.timestamp}</Text>
+                ) : null}
               </View>
               <Text style={styles.channelSnippet} numberOfLines={1}>
                 {lastGroupMsg
-                  ? `${(lastGroupMsg.senderName || 'Maya').split(' ')[0]}: ${lastGroupMsg.body}`
-                  : "Maya: Same loop tomorrow? I'm in!"}
+                  ? `${(lastGroupMsg.senderName || 'Member').split(' ')[0]}: ${lastGroupMsg.body}`
+                  : 'No messages yet — join to start chatting'}
               </Text>
             </View>
           </TouchableOpacity>
@@ -328,15 +355,28 @@ export default function DiscoverScreen() {
             activeOpacity={0.65}
           >
             <View style={styles.avatarStack}>
-              <View style={[styles.avatarStackItem, { backgroundColor: '#DDD6FE', zIndex: 3 }]}>
-                <Text style={styles.avatarStackText}>J</Text>
-              </View>
-              <View style={[styles.avatarStackItem, { backgroundColor: '#FED7AA', zIndex: 2, marginLeft: -8 }]}>
-                <Text style={styles.avatarStackText}>M</Text>
-              </View>
-              <View style={[styles.avatarStackItem, { backgroundColor: '#BAE6FD', zIndex: 1, marginLeft: -8 }]}>
-                <Text style={styles.avatarStackText}>A</Text>
-              </View>
+              {privatePeers.length > 0 ? (
+                privatePeers.map((initial, idx) => (
+                  <View
+                    key={`${initial}-${idx}`}
+                    style={[
+                      styles.avatarStackItem,
+                      {
+                        backgroundColor:
+                          idx === 0 ? '#DDD6FE' : idx === 1 ? '#FED7AA' : '#BAE6FD',
+                        zIndex: 3 - idx,
+                        marginLeft: idx === 0 ? 0 : -8,
+                      },
+                    ]}
+                  >
+                    <Text style={styles.avatarStackText}>{initial}</Text>
+                  </View>
+                ))
+              ) : (
+                <View style={[styles.avatarStackItem, { backgroundColor: figmaColors.sageSoft }]}>
+                  <LockIcon size={12} color={figmaColors.ink} />
+                </View>
+              )}
             </View>
 
             <View style={styles.channelContent}>
@@ -347,28 +387,26 @@ export default function DiscoverScreen() {
                     Private in {item.name}
                   </Text>
                 </View>
-                <Text style={styles.channelTime}>
-                  {latestPrivateChat?.lastMessageTime || '1m'}
-                </Text>
+                {latestPrivateChat?.lastMessageTime ? (
+                  <Text style={styles.channelTime}>
+                    {latestPrivateChat.lastMessageTime}
+                  </Text>
+                ) : null}
               </View>
               <View style={styles.privatePreviewRow}>
                 <Text style={styles.privateCountText}>
-                  {item.privateChats && item.privateChats.length > 0
-                    ? `${item.privateChats.length} private chats`
-                    : '10 private chats'}
+                  {item.privateChats?.length ?? 0} private chats
                 </Text>
-                {totalUnread > 0 || !item.privateChats ? (
+                {totalUnread > 0 ? (
                   <View style={styles.blackBadgeCircle}>
-                    <Text style={styles.blackBadgeCircleText}>
-                      {totalUnread || 4}
-                    </Text>
+                    <Text style={styles.blackBadgeCircleText}>{totalUnread}</Text>
                   </View>
                 ) : null}
               </View>
               <Text style={styles.channelSnippet} numberOfLines={1}>
                 {latestPrivateChat
-                  ? `${latestPrivateChat.recipient.name}: ${latestPrivateChat.lastMessage || 'Scoped side-chat'}`
-                  : 'John Bell: I can introduce you to ev...'}
+                  ? `${latestPrivateChat.recipient.name}: ${latestPrivateChat.lastMessage || 'Private chat'}`
+                  : 'No private chats yet'}
               </Text>
             </View>
           </TouchableOpacity>

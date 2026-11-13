@@ -212,6 +212,18 @@ export default function HomeScreen() {
         ? item.privateChats[0]
         : null;
 
+    const groupSenders = Array.from(
+      new Set(
+        (item.groupMessages || [])
+          .map((m) => m.senderName?.trim()?.[0]?.toUpperCase())
+          .filter(Boolean)
+      )
+    ).slice(0, 3);
+    const privatePeers = (item.privateChats || [])
+      .map((pc) => pc.recipient?.name?.trim()?.[0]?.toUpperCase())
+      .filter(Boolean)
+      .slice(0, 3);
+
     return (
       <View style={styles.communityCard}>
         {/* Community Header Row */}
@@ -233,7 +245,7 @@ export default function HomeScreen() {
             />
             <View style={styles.onlineCountBadge}>
               <Text style={styles.onlineCountBadgeText}>
-                {item.onlineCount || 1}
+                {item.onlineCount ?? 0}
               </Text>
             </View>
           </View>
@@ -243,7 +255,7 @@ export default function HomeScreen() {
               <Text style={styles.categoryLabel}>{item.category}</Text>
               <Text style={styles.metaDot}>•</Text>
               <View style={styles.greenOnlineDot} />
-              <Text style={styles.onlineLabel}>{item.onlineCount || 1} online</Text>
+              <Text style={styles.onlineLabel}>{item.onlineCount ?? 0} online</Text>
             </View>
 
             <View style={styles.titleRow}>
@@ -254,22 +266,24 @@ export default function HomeScreen() {
             </View>
 
             <Text style={styles.communityDesc} numberOfLines={1}>
-              {item.description || 'Scoped community room and side-chats'}
+              {item.description || 'Community space'}
             </Text>
 
             <View style={styles.metaStatsRow}>
               <View style={styles.metaStatItem}>
                 <UsersIcon size={13} color={figmaColors.inkSecondary} />
                 <Text style={styles.metaStatText}>
-                  {item.memberCount || '1.2k'} members
+                  {item.memberCount ?? 0} members
                 </Text>
               </View>
-              <View style={styles.metaStatItem}>
-                <PinIcon size={13} color={figmaColors.inkSecondary} />
-                <Text style={styles.metaStatText} numberOfLines={1}>
-                  {item.location || 'Global'}
-                </Text>
-              </View>
+              {item.location ? (
+                <View style={styles.metaStatItem}>
+                  <PinIcon size={13} color={figmaColors.inkSecondary} />
+                  <Text style={styles.metaStatText} numberOfLines={1}>
+                    {item.location}
+                  </Text>
+                </View>
+              ) : null}
             </View>
           </View>
 
@@ -296,28 +310,41 @@ export default function HomeScreen() {
             activeOpacity={0.65}
           >
             <View style={styles.avatarStack}>
-              <View style={[styles.avatarStackItem, { backgroundColor: '#A7F3D0', zIndex: 3 }]}>
-                <Text style={styles.avatarStackText}>A</Text>
-              </View>
-              <View style={[styles.avatarStackItem, { backgroundColor: '#FEF08A', zIndex: 2, marginLeft: -8 }]}>
-                <Text style={styles.avatarStackText}>P</Text>
-              </View>
-              <View style={[styles.avatarStackItem, { backgroundColor: '#DDD6FE', zIndex: 1, marginLeft: -8 }]}>
-                <Text style={styles.avatarStackText}>L</Text>
-              </View>
+              {groupSenders.length > 0 ? (
+                groupSenders.map((initial, idx) => (
+                  <View
+                    key={`${initial}-${idx}`}
+                    style={[
+                      styles.avatarStackItem,
+                      {
+                        backgroundColor:
+                          idx === 0 ? '#A7F3D0' : idx === 1 ? '#FEF08A' : '#DDD6FE',
+                        zIndex: 3 - idx,
+                        marginLeft: idx === 0 ? 0 : -8,
+                      },
+                    ]}
+                  >
+                    <Text style={styles.avatarStackText}>{initial}</Text>
+                  </View>
+                ))
+              ) : (
+                <View style={[styles.avatarStackItem, { backgroundColor: figmaColors.limeSoft }]}>
+                  <ChatBubbleIcon size={12} color={figmaColors.ink} />
+                </View>
+              )}
             </View>
 
             <View style={styles.channelContent}>
               <View style={styles.channelTitleRow}>
                 <Text style={styles.channelTagLabel}>GROUP CHAT</Text>
-                <Text style={styles.channelTime}>
-                  {lastGroupMsg?.timestamp || '2m'}
-                </Text>
+                {lastGroupMsg?.timestamp ? (
+                  <Text style={styles.channelTime}>{lastGroupMsg.timestamp}</Text>
+                ) : null}
               </View>
               <Text style={styles.channelSnippet} numberOfLines={1}>
                 {lastGroupMsg
                   ? `${lastGroupMsg.senderName.split(' ')[0]}: ${lastGroupMsg.body}`
-                  : "Maya: Same loop tomorrow? I'm in!"}
+                  : 'No messages yet — say hello!'}
               </Text>
             </View>
           </TouchableOpacity>
@@ -331,15 +358,28 @@ export default function HomeScreen() {
             activeOpacity={0.7}
           >
             <View style={styles.avatarStack}>
-              <View style={[styles.avatarStackItem, { backgroundColor: '#DDD6FE', zIndex: 3 }]}>
-                <Text style={styles.avatarStackText}>J</Text>
-              </View>
-              <View style={[styles.avatarStackItem, { backgroundColor: '#FEF08A', zIndex: 2, marginLeft: -8 }]}>
-                <Text style={styles.avatarStackText}>M</Text>
-              </View>
-              <View style={[styles.avatarStackItem, { backgroundColor: '#A7F3D0', zIndex: 1, marginLeft: -8 }]}>
-                <Text style={styles.avatarStackText}>A</Text>
-              </View>
+              {privatePeers.length > 0 ? (
+                privatePeers.map((initial, idx) => (
+                  <View
+                    key={`${initial}-${idx}`}
+                    style={[
+                      styles.avatarStackItem,
+                      {
+                        backgroundColor:
+                          idx === 0 ? '#DDD6FE' : idx === 1 ? '#FEF08A' : '#A7F3D0',
+                        zIndex: 3 - idx,
+                        marginLeft: idx === 0 ? 0 : -8,
+                      },
+                    ]}
+                  >
+                    <Text style={styles.avatarStackText}>{initial}</Text>
+                  </View>
+                ))
+              ) : (
+                <View style={[styles.avatarStackItem, { backgroundColor: figmaColors.sageSoft }]}>
+                  <LockIcon size={12} color={figmaColors.ink} />
+                </View>
+              )}
             </View>
 
             <View style={styles.channelContent}>
@@ -351,23 +391,25 @@ export default function HomeScreen() {
                   </Text>
                 </View>
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                  <Text style={styles.channelTime}>
-                    {latestPrivateChat?.lastMessageTime || '1m'}
-                  </Text>
-                  <View style={styles.blackBadgeCircle}>
-                    <Text style={styles.blackBadgeCircleText}>
-                      {totalUnread > 0 ? totalUnread : (item.privateChats?.length || 1)}
+                  {latestPrivateChat?.lastMessageTime ? (
+                    <Text style={styles.channelTime}>
+                      {latestPrivateChat.lastMessageTime}
                     </Text>
-                  </View>
+                  ) : null}
+                  {totalUnread > 0 ? (
+                    <View style={styles.blackBadgeCircle}>
+                      <Text style={styles.blackBadgeCircleText}>{totalUnread}</Text>
+                    </View>
+                  ) : null}
                 </View>
               </View>
               <Text style={styles.privateCountTitle}>
-                {item.privateChats?.length || 10} private chats
+                {item.privateChats?.length ?? 0} private chats
               </Text>
               <Text style={styles.channelSnippet} numberOfLines={1}>
                 {latestPrivateChat
                   ? `${latestPrivateChat.recipient.name}: ${latestPrivateChat.lastMessage}`
-                  : 'John Bell: I can introduce you to everyone when you arri...'}
+                  : 'No private chats yet'}
               </Text>
             </View>
           </TouchableOpacity>
