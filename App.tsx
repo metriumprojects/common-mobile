@@ -158,8 +158,19 @@ export default function App() {
         checkingRef.current = true;
         const update = await Updates.checkForUpdateAsync();
         if (update.isAvailable) {
-          // Download silently in background; EXUpdates applies on next cold launch
-          await Updates.fetchUpdateAsync();
+          const fetched = await Updates.fetchUpdateAsync();
+          if (fetched.isNew) {
+            Toast.show({
+              type: 'info',
+              text1: 'Update Ready',
+              text2: 'Tap here to apply the latest update now',
+              visibilityTime: 6000,
+              onPress: () => {
+                Toast.hide();
+                Updates.reloadAsync().catch(() => {});
+              },
+            });
+          }
         }
       } catch (err) {
         console.warn('[OTA] Update check skipped:', err);

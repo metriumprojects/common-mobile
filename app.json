@@ -14,7 +14,7 @@
     "updates": {
       "enabled": true,
       "checkAutomatically": "ON_LOAD",
-      "fallbackToCacheTimeout": 5000,
+      "fallbackToCacheTimeout": 10000,
       "url": "https://u.expo.dev/82c203e7-cbdf-4567-8db6-1f2c50b16c04"
     },
     "orientation": "portrait",
@@ -22,7 +22,7 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.common.community",
-      "buildNumber": "13"
+      "buildNumber": "14"
     },
     "android": {
       "package": "com.common.community",
