@@ -10,9 +10,6 @@
     "updates": {
       "url": "https://u.expo.dev/82c203e7-cbdf-4567-8db6-1f2c50b16c04"
     },
-    "plugins": [
-      "expo-web-browser"
-    ],
     "orientation": "portrait",
     "userInterfaceStyle": "light",
     "ios": {
