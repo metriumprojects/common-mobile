@@ -13,7 +13,7 @@ import {
   ScrollView,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import Toast from 'react-native-toast-message';
 import { mobileApi } from '../api/client';
 import { mobileSocket } from '../api/socket';
@@ -75,6 +75,12 @@ export default function HomeScreen() {
       setRefreshing(false);
     }
   }, [user?.id]);
+
+  useFocusEffect(
+    useCallback(() => {
+      fetchCommunities();
+    }, [fetchCommunities])
+  );
 
   useEffect(() => {
     fetchCommunities();
@@ -431,9 +437,18 @@ export default function HomeScreen() {
     );
   };
 
+  const resolvedName =
+    (currentUser?.name && currentUser.name !== 'User' ? currentUser.name : '') ||
+    (user?.fullName && user.fullName !== 'User' ? user.fullName : '') ||
+    (user?.name && user.name !== 'User' ? user.name : '') ||
+    user?.email ||
+    '';
+
   const homeInitials =
-    currentUser?.initials ||
-    (user?.fullName || user?.name || user?.email || 'U')
+    (currentUser?.initials && currentUser.initials !== 'U'
+      ? currentUser.initials
+      : '') ||
+    resolvedName
       .split(' ')
       .filter(Boolean)
       .slice(0, 2)
@@ -446,6 +461,7 @@ export default function HomeScreen() {
       {/* Top Bar */}
       <BrandHeader
         initials={homeInitials}
+        avatarColor={currentUser?.avatarColor || '#059669'}
         onPressAvatar={() => navigation.navigate('Profile')}
       />
 

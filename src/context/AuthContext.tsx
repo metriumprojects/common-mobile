@@ -77,7 +77,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
               fullName:
                 clerkUser.user?.fullName ||
                 `${clerkUser.user?.firstName || ''} ${clerkUser.user?.lastName || ''}`.trim() ||
-                'User',
+                '',
               profilePicture: clerkUser.user?.imageUrl || '',
             };
             setToken(clerkJwt);

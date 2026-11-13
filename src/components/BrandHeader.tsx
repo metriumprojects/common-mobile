@@ -5,12 +5,14 @@ import { figmaColors } from '../theme/figmaTheme';
 interface BrandHeaderProps {
   initials?: string;
   avatarUrl?: string;
+  avatarColor?: string;
   onPressAvatar?: () => void;
 }
 
 export default function BrandHeader({
-  initials = 'AS',
+  initials = 'U',
   avatarUrl,
+  avatarColor,
   onPressAvatar,
 }: BrandHeaderProps) {
   return (
@@ -29,7 +31,12 @@ export default function BrandHeader({
         {avatarUrl ? (
           <Image source={{ uri: avatarUrl }} style={styles.avatarImage} />
         ) : (
-          <View style={styles.avatarCircle}>
+          <View
+            style={[
+              styles.avatarCircle,
+              avatarColor ? { backgroundColor: avatarColor } : null,
+            ]}
+          >
             <Text style={styles.avatarText}>{initials}</Text>
           </View>
         )}
