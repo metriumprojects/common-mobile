@@ -1612,36 +1612,38 @@ export default function CommunityChatScreen() {
                   onPress={() => {
                     if (!selectedMember) return;
                     const memberToRemove = selectedMember;
-                    Alert.alert(
-                      'Remove Member',
-                      `Remove ${memberToRemove.name} from ${community?.name || 'this community'}?`,
-                      [
-                        { text: 'Cancel', style: 'cancel' },
-                        {
-                          text: 'Remove',
-                          style: 'destructive',
-                          onPress: async () => {
-                            try {
-                              await mobileApi.removeMember(
-                                community?.id || communityId,
-                                memberToRemove.id
-                              );
-                              setSelectedMember(null);
-                              fetchCommunityData();
-                              Toast.show({
-                                type: 'success',
-                                text1: `${memberToRemove.name} removed`,
-                              });
-                            } catch (e: any) {
-                              Toast.show({
-                                type: 'error',
-                                text1: e?.response?.data?.error || 'Could not remove member',
-                              });
-                            }
+                    setSelectedMember(null);
+                    setTimeout(() => {
+                      Alert.alert(
+                        'Remove Member',
+                        `Remove ${memberToRemove.name} from ${community?.name || 'this community'}?`,
+                        [
+                          { text: 'Cancel', style: 'cancel' },
+                          {
+                            text: 'Remove',
+                            style: 'destructive',
+                            onPress: async () => {
+                              try {
+                                await mobileApi.removeMember(
+                                  community?.id || communityId,
+                                  memberToRemove.id
+                                );
+                                fetchCommunityData();
+                                Toast.show({
+                                  type: 'success',
+                                  text1: `${memberToRemove.name} removed`,
+                                });
+                              } catch (e: any) {
+                                Toast.show({
+                                  type: 'error',
+                                  text1: e?.response?.data?.error || 'Could not remove member',
+                                });
+                              }
+                            },
                           },
-                        },
-                      ]
-                    );
+                        ]
+                      );
+                    }, 320);
                   }}
                   activeOpacity={0.85}
                 >
@@ -1753,7 +1755,7 @@ export default function CommunityChatScreen() {
                       setEditLocation(community?.location || '');
                       setEditDescription(community?.description || '');
                       setShowInfoModal(false);
-                      setManageMode('edit');
+                      setTimeout(() => setManageMode('edit'), 320);
                     }}
                   >
                     <Text style={styles.infoActionPrimaryText}>
@@ -1767,33 +1769,37 @@ export default function CommunityChatScreen() {
                       { backgroundColor: '#FEF2F2', borderColor: '#FECACA' },
                     ]}
                     onPress={() => {
-                      Alert.alert(
-                        'Delete Community',
-                        `Permanently delete "${community?.name}" and all its messages? This cannot be undone.`,
-                        [
-                          { text: 'Cancel', style: 'cancel' },
-                          {
-                            text: 'Delete',
-                            style: 'destructive',
-                            onPress: async () => {
-                              try {
-                                await mobileApi.deleteCommunity(community?.id || communityId);
-                                setShowInfoModal(false);
-                                Toast.show({
-                                  type: 'success',
-                                  text1: 'Community deleted',
-                                });
-                                navigation.goBack();
-                              } catch (e: any) {
-                                Toast.show({
-                                  type: 'error',
-                                  text1: e?.response?.data?.error || 'Could not delete community',
-                                });
-                              }
+                      const targetId = community?.id || communityId;
+                      const targetName = community?.name;
+                      setShowInfoModal(false);
+                      setTimeout(() => {
+                        Alert.alert(
+                          'Delete Community',
+                          `Permanently delete "${targetName}" and all its messages? This cannot be undone.`,
+                          [
+                            { text: 'Cancel', style: 'cancel' },
+                            {
+                              text: 'Delete',
+                              style: 'destructive',
+                              onPress: async () => {
+                                try {
+                                  await mobileApi.deleteCommunity(targetId);
+                                  Toast.show({
+                                    type: 'success',
+                                    text1: 'Community deleted',
+                                  });
+                                  navigation.goBack();
+                                } catch (e: any) {
+                                  Toast.show({
+                                    type: 'error',
+                                    text1: e?.response?.data?.error || 'Could not delete community',
+                                  });
+                                }
+                              },
                             },
-                          },
-                        ]
-                      );
+                          ]
+                        );
+                      }, 320);
                     }}
                   >
                     <Text style={[styles.infoActionSecondaryText, { color: '#DC2626' }]}>
