@@ -9,7 +9,7 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { mobileApi } from '../api/client';
 import { mobileSocket } from '../api/socket';
 import { Community } from '../types';
@@ -85,10 +85,22 @@ export default function ActivityScreen() {
     };
   }, [fetchActivity]);
 
+  useFocusEffect(
+    useCallback(() => {
+      fetchActivity();
+    }, [fetchActivity])
+  );
+
+  const safeActor = (name?: string) => {
+    if (!name) return 'Member';
+    return name.includes('@') ? name.split('@')[0] : name;
+  };
+
   const activities = useMemo<ActivityItem[]>(() => {
     const items: ActivityItem[] = [];
 
     communities.forEach((comm) => {
+      if (!comm.isJoined) return;
       // 1. Upcoming Community Events
       if (comm.event) {
         items.push({
@@ -133,7 +145,7 @@ export default function ActivityScreen() {
             type: 'like',
             icon: '❤️',
             badgeColor: '#7F1D1D',
-            title: `${msg.likes} ${msg.likes === 1 ? 'person' : 'people'} liked ${msg.senderName}'s post`,
+            title: `${msg.likes} ${msg.likes === 1 ? 'person' : 'people'} liked ${safeActor(msg.senderName)}'s post`,
             description: `"${msg.body}" in ${comm.name}`,
             timestamp: msg.timestamp || 'Recent',
             rawTime: (msg.rawTime || Date.now()) + 100,
@@ -149,7 +161,7 @@ export default function ActivityScreen() {
             type: 'reply',
             icon: '💬',
             badgeColor: '#1E3A8A',
-            title: `${latestComment.senderName} replied in thread`,
+            title: `${safeActor(latestComment.senderName)} replied in thread`,
             description: `"${latestComment.body}" on "${msg.body}"`,
             timestamp: latestComment.timestamp || 'Just now',
             rawTime: (msg.rawTime || Date.now()) + 200,
@@ -164,7 +176,7 @@ export default function ActivityScreen() {
             type: 'reply',
             icon: '↩️',
             badgeColor: '#1E3A8A',
-            title: `${msg.senderName} replied to ${msg.replyTo.senderName}`,
+            title: `${safeActor(msg.senderName)} replied to ${safeActor(msg.replyTo.senderName)}`,
             description: `"${msg.body}" in ${comm.name}`,
             timestamp: msg.timestamp || 'Just now',
             rawTime: msg.rawTime || Date.now(),
@@ -177,7 +189,7 @@ export default function ActivityScreen() {
             type: 'message',
             icon: '📣',
             badgeColor: '#1E293B',
-            title: `${msg.senderName} posted in ${comm.name}`,
+            title: `${safeActor(msg.senderName)} posted in ${comm.name}`,
             description: msg.body,
             timestamp: msg.timestamp || 'Just now',
             rawTime: msg.rawTime || Date.now(),
