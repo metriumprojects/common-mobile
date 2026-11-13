@@ -19,7 +19,7 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.common.community",
-      "buildNumber": "12"
+      "buildNumber": "13"
     },
     "android": {
       "package": "com.common.community",

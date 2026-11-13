@@ -45,7 +45,7 @@ export default function CommunityInboxScreen() {
 
   const fetchInbox = useCallback(async () => {
     try {
-      const all = await mobileApi.getCommunities();
+      const all = await mobileApi.getCommunities(user?.id);
       const found = all.find((c) => c.id === communityId) || all[0];
       if (found) {
         setCommunity(found);
@@ -55,7 +55,7 @@ export default function CommunityInboxScreen() {
     } finally {
       setLoading(false);
     }
-  }, [communityId]);
+  }, [communityId, user?.id]);
 
   useEffect(() => {
     fetchInbox();

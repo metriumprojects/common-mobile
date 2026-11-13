@@ -61,7 +61,7 @@ export default function DiscoverScreen() {
 
   const fetchCommunities = useCallback(async () => {
     try {
-      const data = await mobileApi.getCommunities();
+      const data = await mobileApi.getCommunities(user?.id);
       if (Array.isArray(data)) {
         setCommunities(data);
       }
@@ -71,19 +71,26 @@ export default function DiscoverScreen() {
       setLoading(false);
       setRefreshing(false);
     }
-  }, []);
+  }, [user?.id]);
 
   useEffect(() => {
     fetchCommunities();
 
     const handleCommunityCreated = (newComm: Community) => {
+      const isMine = Boolean(
+        user?.id &&
+          (newComm.creatorId === user.id ||
+            (Array.isArray((newComm as any).members) &&
+              (newComm as any).members.includes(user.id)))
+      );
       setCommunities((prev) => {
         if (prev.some((c) => c.id === newComm.id)) return prev;
-        return [newComm, ...prev];
+        return [{ ...newComm, isJoined: isMine }, ...prev];
       });
     };
 
-    const handleJoinUpdated = ({ communityId, isJoined }: any) => {
+    const handleJoinUpdated = ({ communityId, userId, isJoined }: any) => {
+      if (userId && user?.id && userId !== user.id) return;
       setCommunities((prev) =>
         prev.map((c) => (c.id === communityId ? { ...c, isJoined } : c))
       );

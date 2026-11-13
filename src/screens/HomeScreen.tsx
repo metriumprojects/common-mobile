@@ -55,13 +55,18 @@ export default function HomeScreen() {
 
   const fetchCommunities = useCallback(async () => {
     try {
-      const data = await mobileApi.getCommunities();
+      setCurrentUser((prev) => (prev && prev.id !== user?.id ? null : prev));
+      const data = await mobileApi.getCommunities(user?.id);
       if (data && Array.isArray(data)) {
         setCommunities(data);
       }
-      const userRes = await mobileApi.getCurrentUser(user?.id);
-      if (userRes) {
-        setCurrentUser(userRes);
+      if (user?.id) {
+        const userRes = await mobileApi.getCurrentUser(user.id);
+        if (userRes) {
+          setCurrentUser(userRes);
+        }
+      } else {
+        setCurrentUser(null);
       }
     } catch (err) {
       console.warn('Error fetching communities:', err);
@@ -69,7 +74,7 @@ export default function HomeScreen() {
       setLoading(false);
       setRefreshing(false);
     }
-  }, [user]);
+  }, [user?.id]);
 
   useEffect(() => {
     fetchCommunities();
@@ -92,13 +97,20 @@ export default function HomeScreen() {
     };
 
     const handleCommunityCreated = (newComm: Community) => {
+      const isMine = Boolean(
+        user?.id &&
+          (newComm.creatorId === user.id ||
+            (Array.isArray((newComm as any).members) &&
+              (newComm as any).members.includes(user.id)))
+      );
       setCommunities((prev) => {
         if (prev.some((c) => c.id === newComm.id)) return prev;
-        return [newComm, ...prev];
+        return [{ ...newComm, isJoined: isMine }, ...prev];
       });
     };
 
-    const handleJoinUpdated = ({ communityId, isJoined }: any) => {
+    const handleJoinUpdated = ({ communityId, userId, isJoined }: any) => {
+      if (userId && user?.id && userId !== user.id) return;
       setCommunities((prev) =>
         prev.map((c) => (c.id === communityId ? { ...c, isJoined } : c))
       );
@@ -419,11 +431,21 @@ export default function HomeScreen() {
     );
   };
 
+  const homeInitials =
+    currentUser?.initials ||
+    (user?.fullName || user?.name || user?.email || 'U')
+      .split(' ')
+      .filter(Boolean)
+      .slice(0, 2)
+      .map((p: string) => p[0].toUpperCase())
+      .join('') ||
+    'U';
+
   return (
     <SafeAreaView edges={['top']} style={styles.safeArea}>
       {/* Top Bar */}
       <BrandHeader
-        initials={currentUser?.initials || user?.name?.[0]?.toUpperCase() || 'U'}
+        initials={homeInitials}
         onPressAvatar={() => navigation.navigate('Profile')}
       />
 

@@ -84,7 +84,7 @@ export default function PrivateChatScreen() {
 
   const fetchPrivateMessages = useCallback(async () => {
     try {
-      const all = await mobileApi.getCommunities();
+      const all = await mobileApi.getCommunities(user?.id);
       const current = all.find((c) => c.id === communityId) || all[0];
       if (current) {
         setCommunity(current);
@@ -104,7 +104,7 @@ export default function PrivateChatScreen() {
     } finally {
       setLoading(false);
     }
-  }, [communityId, recipientId]);
+  }, [communityId, recipientId, user?.id]);
 
   useEffect(() => {
     fetchPrivateMessages();
@@ -114,11 +114,11 @@ export default function PrivateChatScreen() {
       recipientId: rId,
       message,
     }: any) => {
-      if (cId !== communityId) return;
+      if (cId !== communityId || !message) return;
+      const currentUserId = user?.id;
       const isRelevant =
-        (rId === recipientId && message.senderId === user?.id) ||
-        (message.senderId === recipientId && rId === user?.id) ||
-        rId === recipientId;
+        (message.senderId === currentUserId && rId === recipientId) ||
+        (message.senderId === recipientId && rId === currentUserId);
 
       if (isRelevant) {
         setMessages((prev) => {
@@ -151,14 +151,19 @@ export default function PrivateChatScreen() {
       if (
         payload?.communityId === communityId &&
         payload?.isPrivate &&
-        payload?.recipientId === (user?.id || 'me')
+        payload?.senderId === recipientId &&
+        payload?.recipientId === user?.id
       ) {
         setIsTyping(true);
       }
     };
 
     const handleUserStopTyping = (payload: any) => {
-      if (payload?.communityId === communityId && payload?.isPrivate) {
+      if (
+        payload?.communityId === communityId &&
+        payload?.isPrivate &&
+        payload?.senderId === recipientId
+      ) {
         setIsTyping(false);
       }
     };
@@ -185,6 +190,7 @@ export default function PrivateChatScreen() {
     mobileSocket.emit('typing', {
       communityId,
       isPrivate: true,
+      senderId: user?.id,
       recipientId,
       userName: user?.name || 'Member',
     });
@@ -193,6 +199,7 @@ export default function PrivateChatScreen() {
       mobileSocket.emit('stop-typing', {
         communityId,
         isPrivate: true,
+        senderId: user?.id,
         recipientId,
       });
     }, 1500);
@@ -206,6 +213,7 @@ export default function PrivateChatScreen() {
     mobileSocket.emit('stop-typing', {
       communityId,
       isPrivate: true,
+      senderId: user?.id,
       recipientId,
     });
 

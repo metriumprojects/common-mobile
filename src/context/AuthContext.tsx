@@ -7,6 +7,7 @@ import {
   storeAuthData,
 } from '../util/authController';
 import { useAuth as useClerkAuth, useUser as useClerkUser } from '@clerk/clerk-expo';
+import { mobileSocket } from '../api/socket';
 
 interface AuthContextType {
   user: any;
@@ -119,7 +120,22 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
     syncClerkSession();
 
+    useEffect(() => {
+    const uid = user?.id;
+    if (!uid) return;
+    const registerOnline = () => {
+      mobileSocket.emit('user-online', uid);
+    };
+    if (mobileSocket.connected) {
+      registerOnline();
+    }
+    mobileSocket.on('connect', registerOnline);
     return () => {
+      mobileSocket.off('connect', registerOnline);
+    };
+  }, [user?.id]);
+
+  return () => {
       isCancelled = true;
     };
   }, [clerkAuth.isLoaded, clerkAuth.isSignedIn, clerkAuth.userId, clerkUser.user]);
@@ -160,6 +176,21 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    const uid = user?.id;
+    if (!uid) return;
+    const registerOnline = () => {
+      mobileSocket.emit('user-online', uid);
+    };
+    if (mobileSocket.connected) {
+      registerOnline();
+    }
+    mobileSocket.on('connect', registerOnline);
+    return () => {
+      mobileSocket.off('connect', registerOnline);
+    };
+  }, [user?.id]);
 
   return (
     <AuthContext.Provider

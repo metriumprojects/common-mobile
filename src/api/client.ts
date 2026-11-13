@@ -1,7 +1,7 @@
 import axios from "axios";
 import { Community, ChatMessage, UserProfile } from "../types";
 import { APP_CONFIG } from "../config/appConfig";
-import { getStoredToken } from "../util/authController";
+import { getStoredToken, getStoredUserData } from "../util/authController";
 
 export const API_BASE_URL = APP_CONFIG.API_BASE_URL;
 
@@ -15,9 +15,15 @@ const apiClient = axios.create({
 
 apiClient.interceptors.request.use(async (config) => {
   try {
-    const token = await getStoredToken();
+    const [token, userData] = await Promise.all([
+      getStoredToken(),
+      getStoredUserData(),
+    ]);
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
+    }
+    if (userData?.id) {
+      config.headers["x-user-id"] = userData.id;
     }
   } catch (_) {}
   return config;
