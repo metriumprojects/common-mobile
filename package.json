@@ -26,6 +26,8 @@
     "expo": "^54.0.38",
     "expo-auth-session": "~7.0.11",
     "expo-crypto": "~15.0.9",
+    "expo-document-picker": "~14.0.8",
+    "expo-image-picker": "~17.0.11",
     "expo-updates": "~29.0.20",
     "expo-web-browser": "~15.0.11",
     "formik": "^2.4.6",

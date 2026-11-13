@@ -185,6 +185,57 @@ export const mobileApi = {
     return res.data;
   },
 
+  async uploadFileDirect(
+    uri: string,
+    fileName: string,
+    mimeType: string,
+    fileSize?: number
+  ): Promise<{ url: string; provider?: string }> {
+    const fileRes = await fetch(uri);
+    const blob = await fileRes.blob();
+    const resolvedSize = fileSize || blob.size || 1;
+
+    try {
+      const presign = await apiClient.post<{
+        supported: boolean;
+        uploadUrl?: string;
+        publicUrl?: string;
+        mimeType?: string;
+      }>("/upload/presign", {
+        fileName,
+        mimeType: mimeType || blob.type || "application/octet-stream",
+        fileSize: resolvedSize,
+      });
+
+      if (presign.data?.supported && presign.data.uploadUrl && presign.data.publicUrl) {
+        const putRes = await fetch(presign.data.uploadUrl, {
+          method: "PUT",
+          headers: {
+            "Content-Type": presign.data.mimeType || mimeType || "application/octet-stream",
+          },
+          body: blob,
+        });
+        if (putRes.ok) {
+          return { url: presign.data.publicUrl, provider: "cloudflare-r2" };
+        }
+      }
+    } catch {
+      // Fall through to base64 fallback for <= 10MB files
+    }
+
+    if (resolvedSize > 10 * 1024 * 1024) {
+      throw new Error("File exceeds 10MB fallback limit; ensure R2 presigned upload is configured.");
+    }
+
+    const base64 = await new Promise<string>((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onloadend = () => resolve(reader.result as string);
+      reader.onerror = () => reject(new Error("Failed to read file"));
+      reader.readAsDataURL(blob);
+    });
+    return mobileApi.uploadMedia(base64, fileName);
+  },
+
   async toggleReaction(
     communityId: string,
     messageId: string,

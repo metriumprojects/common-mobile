@@ -273,7 +273,8 @@ export default function PrivateChatScreen() {
   const sendOptimisticPrivateMessage = async (
     textToSend: string,
     replyTo?: { senderName: string; body: string },
-    retryTempId?: string
+    retryTempId?: string,
+    mediaUrl?: string
   ) => {
     const tempId = retryTempId || `temp-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
     const senderName = user?.name || user?.fullName || 'Community Member';
@@ -297,6 +298,7 @@ export default function PrivateChatScreen() {
         senderInitials: senderData.initials,
         senderAvatarColor: senderData.avatarColor,
         body: textToSend,
+        imageUrl: mediaUrl,
         timestamp: 'Sending...',
         rawTime: Date.now(),
         replyTo,
@@ -326,7 +328,7 @@ export default function PrivateChatScreen() {
           avatarColor: recipient.avatarColor,
           role: recipient.role,
         },
-        undefined,
+        mediaUrl,
         tempId
       );
       setMessages((prev) => {
@@ -882,6 +884,73 @@ export default function PrivateChatScreen() {
         {/* Plus Quick-Action Menu */}
         {showPlusMenu ? (
           <View style={styles.plusMenuPopup}>
+            <TouchableOpacity
+              style={[styles.plusMenuItem, { flexDirection: 'row', alignItems: 'center', gap: 8 }]}
+              onPress={async () => {
+                setShowPlusMenu(false);
+                try {
+                  const ImagePicker = require('expo-image-picker');
+                  const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
+                  if (!perm.granted) {
+                    Toast.show({ type: 'info', text1: 'Permission needed to access photos' });
+                    return;
+                  }
+                  const picked = await ImagePicker.launchImageLibraryAsync({
+                    mediaTypes: ['images', 'videos'],
+                    quality: 0.85,
+                  });
+                  if (picked.canceled || !picked.assets?.[0]) return;
+                  const asset = picked.assets[0];
+                  Toast.show({ type: 'info', text1: 'Uploading media...' });
+                  const uploaded = await mobileApi.uploadFileDirect(
+                    asset.uri,
+                    asset.fileName || `media-${Date.now()}.jpg`,
+                    asset.mimeType || 'image/jpeg',
+                    asset.fileSize
+                  );
+                  await sendOptimisticPrivateMessage('', undefined, undefined, uploaded.url);
+                } catch (err: any) {
+                  Toast.show({
+                    type: 'error',
+                    text1: 'Media upload unavailable on this build',
+                    text2: err?.message || 'Rebuild native app (Build 18) for gallery picker',
+                  });
+                }
+              }}
+            >
+              <Text style={styles.plusMenuItemText}>📷 Share Photo / Video</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.plusMenuItem, { flexDirection: 'row', alignItems: 'center', gap: 8 }]}
+              onPress={async () => {
+                setShowPlusMenu(false);
+                try {
+                  const DocumentPicker = require('expo-document-picker');
+                  const picked = await DocumentPicker.getDocumentAsync({
+                    type: ['application/pdf', 'text/plain', 'text/csv', 'application/zip', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'],
+                    copyToCacheDirectory: true,
+                  });
+                  if (picked.canceled || !picked.assets?.[0]) return;
+                  const asset = picked.assets[0];
+                  Toast.show({ type: 'info', text1: `Uploading ${asset.name}...` });
+                  const uploaded = await mobileApi.uploadFileDirect(
+                    asset.uri,
+                    asset.name,
+                    asset.mimeType || 'application/octet-stream',
+                    asset.size
+                  );
+                  await sendOptimisticPrivateMessage('', undefined, undefined, uploaded.url);
+                } catch (err: any) {
+                  Toast.show({
+                    type: 'error',
+                    text1: 'Document picker unavailable on this build',
+                    text2: err?.message || 'Rebuild native app (Build 18) for file picker',
+                  });
+                }
+              }}
+            >
+              <Text style={styles.plusMenuItemText}>📎 Share Document / File</Text>
+            </TouchableOpacity>
             <TouchableOpacity
               style={[styles.plusMenuItem, { flexDirection: 'row', alignItems: 'center', gap: 8 }]}
               onPress={() => {
