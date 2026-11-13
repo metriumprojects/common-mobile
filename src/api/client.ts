@@ -111,6 +111,21 @@ export const mobileApi = {
     return res.data;
   },
 
+  async deleteCommunity(
+    communityId: string
+  ): Promise<{ success: boolean; communityId: string }> {
+    const res = await apiClient.delete(`/communities/${communityId}`);
+    return res.data;
+  },
+
+  async removeMember(
+    communityId: string,
+    memberId: string
+  ): Promise<{ success: boolean; communityId: string; memberId: string }> {
+    const res = await apiClient.delete(`/communities/${communityId}/members/${memberId}`);
+    return res.data;
+  },
+
   async updatePinnedNotice(
     communityId: string,
     author: string,

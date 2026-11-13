@@ -13,6 +13,7 @@ import {
   ScrollView,
   Modal,
   Linking,
+  Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRoute, useNavigation } from '@react-navigation/native';
@@ -593,34 +594,7 @@ export default function CommunityChatScreen() {
           </ScrollView>
         </View>
 
-        {/* SECTION 2: Meet the Group Card */}
-        <View style={styles.meetGroupCard}>
-          <Image
-            source={{
-              uri:
-                community.imageUrl ||
-                'https://images.unsplash.com/photo-1522202176988-66273c2fd55f?w=150',
-            }}
-            style={styles.meetGroupImg}
-          />
-          <View style={{ flex: 1 }}>
-            <Text style={styles.meetGroupTitle} numberOfLines={1}>
-              {community.name}
-            </Text>
-            <Text style={styles.meetGroupDesc} numberOfLines={1}>
-              {community.description}
-            </Text>
-          </View>
-          <TouchableOpacity
-            style={styles.meetGroupBtn}
-            onPress={() => setShowInfoModal(true)}
-            activeOpacity={0.8}
-          >
-            <Text style={styles.meetGroupBtnText}>Meet the group</Text>
-          </TouchableOpacity>
-        </View>
-
-        {/* SECTION 3: Pinned Announcement Banner */}
+        {/* SECTION 2: Pinned Announcement Banner */}
         {community.pinnedNotice ? (
           <TouchableOpacity
             style={styles.pinnedBox}
@@ -1058,7 +1032,7 @@ export default function CommunityChatScreen() {
         </View>
       ) : null}
 
-      {/* Sub-bar (Location & View Group) */}
+      {/* Sub-bar (Location & Category) */}
       <View style={styles.subHeaderBar}>
         <View style={styles.subHeaderLeft}>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
@@ -1069,14 +1043,38 @@ export default function CommunityChatScreen() {
           </View>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
             <UsersIcon size={12} color={figmaColors.inkMuted} />
-            <Text style={styles.subHeaderMeta}>Open hangout</Text>
+            <Text style={styles.subHeaderMeta}>
+              {community?.isJoined === false ? 'Members only' : 'Open hangout'}
+            </Text>
           </View>
         </View>
-        <TouchableOpacity onPress={() => setShowInfoModal(true)}>
-          <Text style={styles.subHeaderLink}>View group</Text>
-        </TouchableOpacity>
       </View>
 
+      {!loading && community && community.isJoined === false ? (
+        <View style={styles.joinGateContainer}>
+          <View style={styles.joinGateCard}>
+            <View style={styles.joinGateBadge}>
+              <LockIcon size={14} color={figmaColors.inkOlive} />
+              <Text style={styles.joinGateBadgeText}>MEMBERS ONLY</Text>
+            </View>
+            <Text style={styles.joinGateTitle}>{community.name}</Text>
+            <Text style={styles.joinGateMeta}>
+              {community.category} · {community.location} · {community.memberCount || '1'} members
+            </Text>
+            <Text style={styles.joinGateDesc}>
+              {community.description ||
+                'Join this community to read channel messages, participate in discussions, and start scoped side-chats.'}
+            </Text>
+            <TouchableOpacity
+              style={styles.joinGateBtn}
+              onPress={handleToggleMembership}
+              activeOpacity={0.85}
+            >
+              <Text style={styles.joinGateBtnText}>+ Join Community</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      ) : (
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         style={styles.contentArea}
@@ -1249,6 +1247,7 @@ export default function CommunityChatScreen() {
           </TouchableOpacity>
         </View>
       </KeyboardAvoidingView>
+      )}
 
       {/* Thread Comments Drawer Modal */}
       <Modal
@@ -1398,48 +1397,105 @@ export default function CommunityChatScreen() {
               </Text>
             </TouchableOpacity>
 
-            {/* Creator Moderator Controls */}
-            {user?.id === community?.creatorId &&
+            {/* Owner / Moderator Controls */}
+            {(user?.id === community?.creatorId ||
+              (user?.id && community?.moderators?.includes(user.id))) &&
             selectedMember &&
-            selectedMember.id !== user?.id ? (
-              <TouchableOpacity
-                style={[
-                  styles.messageMemberBtn,
-                  {
-                    backgroundColor: '#F1F5F9',
-                    borderWidth: 1,
-                    borderColor: '#CBD5E1',
-                    marginTop: 8,
-                  },
-                ]}
-                onPress={async () => {
-                  if (!selectedMember) return;
-                  const isMod = community?.moderators?.includes(selectedMember.id);
-                  try {
-                    await mobileApi.manageModerator(
-                      community?.id || communityId,
-                      selectedMember.id,
-                      isMod ? 'demote' : 'promote',
-                      user?.id || 'me'
+            selectedMember.id !== user?.id &&
+            selectedMember.id !== community?.creatorId ? (
+              <>
+                {user?.id === community?.creatorId ? (
+                  <TouchableOpacity
+                    style={[
+                      styles.messageMemberBtn,
+                      {
+                        backgroundColor: '#F1F5F9',
+                        borderWidth: 1,
+                        borderColor: '#CBD5E1',
+                        marginTop: 8,
+                      },
+                    ]}
+                    onPress={async () => {
+                      if (!selectedMember) return;
+                      const isMod = community?.moderators?.includes(selectedMember.id);
+                      try {
+                        await mobileApi.manageModerator(
+                          community?.id || communityId,
+                          selectedMember.id,
+                          isMod ? 'demote' : 'promote',
+                          user?.id || 'me'
+                        );
+                        fetchCommunityData();
+                        setSelectedMember(null);
+                        Toast.show({
+                          type: 'success',
+                          text1: isMod ? 'Demoted from Moderator' : 'Promoted to Moderator',
+                        });
+                      } catch (e) {
+                        Toast.show({ type: 'error', text1: 'Action failed' });
+                      }
+                    }}
+                    activeOpacity={0.85}
+                  >
+                    <Text style={[styles.messageMemberBtnText, { color: '#0F172A' }]}>
+                      {community?.moderators?.includes(selectedMember?.id)
+                        ? '🛡️ Demote from Moderator'
+                        : '⭐ Make Community Moderator'}
+                    </Text>
+                  </TouchableOpacity>
+                ) : null}
+
+                <TouchableOpacity
+                  style={[
+                    styles.messageMemberBtn,
+                    {
+                      backgroundColor: '#FEF2F2',
+                      borderWidth: 1,
+                      borderColor: '#FECACA',
+                      marginTop: 8,
+                    },
+                  ]}
+                  onPress={() => {
+                    if (!selectedMember) return;
+                    const memberToRemove = selectedMember;
+                    Alert.alert(
+                      'Remove Member',
+                      `Remove ${memberToRemove.name} from ${community?.name || 'this community'}?`,
+                      [
+                        { text: 'Cancel', style: 'cancel' },
+                        {
+                          text: 'Remove',
+                          style: 'destructive',
+                          onPress: async () => {
+                            try {
+                              await mobileApi.removeMember(
+                                community?.id || communityId,
+                                memberToRemove.id
+                              );
+                              setSelectedMember(null);
+                              fetchCommunityData();
+                              Toast.show({
+                                type: 'success',
+                                text1: `${memberToRemove.name} removed`,
+                              });
+                            } catch (e: any) {
+                              Toast.show({
+                                type: 'error',
+                                text1: e?.response?.data?.error || 'Could not remove member',
+                              });
+                            }
+                          },
+                        },
+                      ]
                     );
-                    fetchCommunityData();
-                    setSelectedMember(null);
-                    Toast.show({
-                      type: 'success',
-                      text1: isMod ? 'Demoted from Moderator' : 'Promoted to Moderator',
-                    });
-                  } catch (e) {
-                    Toast.show({ type: 'error', text1: 'Action failed' });
-                  }
-                }}
-                activeOpacity={0.85}
-              >
-                <Text style={[styles.messageMemberBtnText, { color: '#0F172A' }]}>
-                  {community?.moderators?.includes(selectedMember?.id)
-                    ? '🛡️ Demote from Moderator'
-                    : '⭐ Make Community Moderator'}
-                </Text>
-              </TouchableOpacity>
+                  }}
+                  activeOpacity={0.85}
+                >
+                  <Text style={[styles.messageMemberBtnText, { color: '#DC2626' }]}>
+                    Remove from Community
+                  </Text>
+                </TouchableOpacity>
+              </>
             ) : null}
           </View>
         </View>
@@ -1533,32 +1589,58 @@ export default function CommunityChatScreen() {
                 </Text>
               </View>
 
-              <TouchableOpacity
-                style={styles.infoActionPrimary}
-                onPress={() => {
-                  setShowInfoModal(false);
-                  if (community) {
-                    navigation.navigate('CommunityInbox', {
-                      communityId: community.id,
-                    });
-                  }
-                }}
-              >
-                <Text style={styles.infoActionPrimaryText}>
-                  🔒 View All Private Chats in this Community
-                </Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={styles.infoActionSecondary}
-                onPress={handleToggleMembership}
-              >
-                <Text style={styles.infoActionSecondaryText}>
-                  {community?.isJoined === false
-                    ? '+ Join Community'
-                    : '✓ Joined Community (Tap to Leave)'}
-                </Text>
-              </TouchableOpacity>
+              {user?.id === community?.creatorId ? (
+                <TouchableOpacity
+                  style={[
+                    styles.infoActionSecondary,
+                    { backgroundColor: '#FEF2F2', borderColor: '#FECACA' },
+                  ]}
+                  onPress={() => {
+                    Alert.alert(
+                      'Delete Community',
+                      `Permanently delete "${community?.name}" and all its messages? This cannot be undone.`,
+                      [
+                        { text: 'Cancel', style: 'cancel' },
+                        {
+                          text: 'Delete',
+                          style: 'destructive',
+                          onPress: async () => {
+                            try {
+                              await mobileApi.deleteCommunity(community?.id || communityId);
+                              setShowInfoModal(false);
+                              Toast.show({
+                                type: 'success',
+                                text1: 'Community deleted',
+                              });
+                              navigation.goBack();
+                            } catch (e: any) {
+                              Toast.show({
+                                type: 'error',
+                                text1: e?.response?.data?.error || 'Could not delete community',
+                              });
+                            }
+                          },
+                        },
+                      ]
+                    );
+                  }}
+                >
+                  <Text style={[styles.infoActionSecondaryText, { color: '#DC2626' }]}>
+                    Delete Community
+                  </Text>
+                </TouchableOpacity>
+              ) : (
+                <TouchableOpacity
+                  style={styles.infoActionSecondary}
+                  onPress={handleToggleMembership}
+                >
+                  <Text style={styles.infoActionSecondaryText}>
+                    {community?.isJoined === false
+                      ? '+ Join Community'
+                      : 'Leave Community'}
+                  </Text>
+                </TouchableOpacity>
+              )}
             </ScrollView>
           </View>
         </View>
@@ -2468,5 +2550,71 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontSize: 14,
     fontWeight: '800',
+  },
+  joinGateContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    backgroundColor: figmaColors.bg,
+  },
+  joinGateCard: {
+    width: '100%',
+    backgroundColor: '#FFFFFF',
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: figmaColors.border,
+    padding: 24,
+    alignItems: 'center',
+    ...figmaShadows.card,
+  },
+  joinGateBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: figmaColors.limeSoft,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 999,
+    marginBottom: 14,
+  },
+  joinGateBadgeText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: figmaColors.inkOlive,
+    letterSpacing: 0.6,
+  },
+  joinGateTitle: {
+    fontSize: 22,
+    fontWeight: '800',
+    color: figmaColors.ink,
+    textAlign: 'center',
+    marginBottom: 6,
+  },
+  joinGateMeta: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: figmaColors.inkSecondary,
+    textAlign: 'center',
+    marginBottom: 12,
+  },
+  joinGateDesc: {
+    fontSize: 14,
+    color: figmaColors.inkSecondary,
+    textAlign: 'center',
+    lineHeight: 20,
+    marginBottom: 20,
+  },
+  joinGateBtn: {
+    width: '100%',
+    backgroundColor: figmaColors.ink,
+    paddingVertical: 14,
+    borderRadius: 12,
+    alignItems: 'center',
+  },
+  joinGateBtnText: {
+    color: '#FFFFFF',
+    fontSize: 15,
+    fontWeight: '700',
   },
 });
