@@ -7,7 +7,7 @@ export const API_BASE_URL = APP_CONFIG.API_BASE_URL;
 
 const apiClient = axios.create({
   baseURL: API_BASE_URL,
-  timeout: 60000,
+  timeout: 20000,
   headers: {
     "Content-Type": "application/json",
   },
@@ -39,7 +39,7 @@ apiClient.interceptors.response.use(
     if (config && method === "get" && isTransient) {
       config.__retryCount = (config.__retryCount || 0) + 1;
       if (config.__retryCount <= 2) {
-        await new Promise((resolve) => setTimeout(resolve, 1200 * config.__retryCount));
+        await new Promise((resolve) => setTimeout(resolve, 800 * config.__retryCount));
         return apiClient(config);
       }
     }

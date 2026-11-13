@@ -19,6 +19,7 @@ import Toast, { ToastConfig } from 'react-native-toast-message';
 import * as Updates from 'expo-updates';
 
 import { APP_CONFIG } from './src/config/appConfig';
+import { mobileApi } from './src/api/client';
 import { tokenCache } from './src/util/tokenCache';
 import { AuthProvider, useAuth } from './src/context/AuthContext';
 import { figmaColors } from './src/theme/figmaTheme';
@@ -187,6 +188,9 @@ export default function App() {
   const checkingRef = useRef(false);
 
   useEffect(() => {
+    // Wake backend immediately in parallel with Clerk/auth startup
+    mobileApi.getHealth().catch(() => {});
+
     const checkAndApplyOTA = async () => {
       if (__DEV__ || checkingRef.current) return;
       try {

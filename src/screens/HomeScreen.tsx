@@ -78,16 +78,25 @@ export default function HomeScreen() {
           setLoading(false);
         }
       }
-      const data = await mobileApi.getCommunities(user?.id);
-      if (data && Array.isArray(data)) {
-        setCommunities(data);
-        setCachedCommunities(user?.id, data);
+      const [commResult, userResult] = await Promise.allSettled([
+        mobileApi.getCommunities(user?.id),
+        user?.id ? mobileApi.getCurrentUser(user.id) : Promise.resolve(null),
+      ]);
+
+      if (commResult.status === 'fulfilled') {
+        const data = commResult.value;
+        if (data && Array.isArray(data)) {
+          setCommunities(data);
+          setCachedCommunities(user?.id, data);
+        }
+      } else {
+        throw commResult.reason;
       }
+
       if (user?.id) {
-        const userRes = await mobileApi.getCurrentUser(user.id);
-        if (userRes) {
-          setCurrentUser(userRes);
-          setCachedUser(user.id, userRes);
+        if (userResult.status === 'fulfilled' && userResult.value) {
+          setCurrentUser(userResult.value);
+          setCachedUser(user.id, userResult.value);
         }
       } else {
         setCurrentUser(null);
