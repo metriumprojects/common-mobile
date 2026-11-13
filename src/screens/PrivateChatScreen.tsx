@@ -11,6 +11,7 @@ import {
   ActivityIndicator,
   Image,
   Modal,
+  Linking,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRoute, useNavigation } from '@react-navigation/native';
@@ -97,6 +98,7 @@ export default function PrivateChatScreen() {
   // Modals
   const [showOptionsModal, setShowOptionsModal] = useState(false);
   const [showPlusMenu, setShowPlusMenu] = useState(false);
+  const [previewImageUrl, setPreviewImageUrl] = useState<string | null>(null);
 
   const flatListRef = useRef<FlatList>(null);
   const typingTimeoutRef = useRef<any>(null);
@@ -323,7 +325,9 @@ export default function PrivateChatScreen() {
           initials: recipient.initials,
           avatarColor: recipient.avatarColor,
           role: recipient.role,
-        }
+        },
+        undefined,
+        tempId
       );
       setMessages((prev) => {
         const alreadyHasReal = prev.some((m) => m.id === sentMsg.id);
@@ -520,11 +524,51 @@ export default function PrivateChatScreen() {
             ) : null}
 
             {item.imageUrl ? (
-              <Image
-                source={{ uri: item.imageUrl }}
-                style={{ width: 220, height: 160, borderRadius: 12, marginBottom: item.body ? 6 : 0 }}
-                resizeMode="cover"
-              />
+              /\.(png|jpe?g|webp|gif)(\?|$)/i.test(item.imageUrl) ||
+              item.imageUrl.startsWith('data:image/') ? (
+                <TouchableOpacity
+                  activeOpacity={0.9}
+                  onPress={() => setPreviewImageUrl(item.imageUrl || null)}
+                >
+                  <Image
+                    source={{ uri: item.imageUrl }}
+                    style={{ width: 220, height: 160, borderRadius: 12, marginBottom: item.body ? 6 : 0 }}
+                    resizeMode="cover"
+                  />
+                </TouchableOpacity>
+              ) : (
+                <TouchableOpacity
+                  activeOpacity={0.8}
+                  onPress={() => item.imageUrl && Linking.openURL(item.imageUrl).catch(() => {})}
+                  style={{
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    backgroundColor: isSelf ? 'rgba(255,255,255,0.14)' : '#F1F5F9',
+                    paddingHorizontal: 10,
+                    paddingVertical: 8,
+                    borderRadius: 10,
+                    marginBottom: item.body ? 6 : 0,
+                    gap: 8,
+                  }}
+                >
+                  <Text style={{ fontSize: 18 }}>📎</Text>
+                  <View style={{ flexShrink: 1 }}>
+                    <Text
+                      numberOfLines={1}
+                      style={{
+                        color: isSelf ? '#FFFFFF' : '#0F172A',
+                        fontSize: 13,
+                        fontWeight: '600',
+                      }}
+                    >
+                      {decodeURIComponent(item.imageUrl.split('/').pop()?.split('?')[0] || 'Attachment')}
+                    </Text>
+                    <Text style={{ color: isSelf ? '#CBD5E1' : '#64748B', fontSize: 11 }}>
+                      Tap to open file
+                    </Text>
+                  </View>
+                </TouchableOpacity>
+              )
             ) : null}
 
             {item.body ? (
@@ -820,7 +864,9 @@ export default function PrivateChatScreen() {
             contentContainerStyle={styles.messageList}
             initialNumToRender={15}
             maxToRenderPerBatch={10}
-            windowSize={7}
+            updateCellsBatchingPeriod={30}
+            windowSize={9}
+            removeClippedSubviews={Platform.OS === 'android'}
           />
         )}
 
@@ -1046,6 +1092,48 @@ export default function PrivateChatScreen() {
             ))}
           </View>
         </TouchableOpacity>
+      </Modal>
+
+      {/* WhatsApp-style Image Lightbox */}
+      <Modal
+        visible={Boolean(previewImageUrl)}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setPreviewImageUrl(null)}
+      >
+        <View
+          style={{
+            flex: 1,
+            backgroundColor: 'rgba(0,0,0,0.95)',
+            justifyContent: 'center',
+            alignItems: 'center',
+          }}
+        >
+          <TouchableOpacity
+            onPress={() => setPreviewImageUrl(null)}
+            style={{
+              position: 'absolute',
+              top: 50,
+              right: 20,
+              zIndex: 10,
+              backgroundColor: 'rgba(255,255,255,0.18)',
+              width: 38,
+              height: 38,
+              borderRadius: 19,
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+          >
+            <Text style={{ color: '#FFFFFF', fontSize: 18, fontWeight: '700' }}>✕</Text>
+          </TouchableOpacity>
+          {previewImageUrl ? (
+            <Image
+              source={{ uri: previewImageUrl }}
+              style={{ width: '94%', height: '78%' }}
+              resizeMode="contain"
+            />
+          ) : null}
+        </View>
       </Modal>
     </SafeAreaView>
   );

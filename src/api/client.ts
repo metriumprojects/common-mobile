@@ -36,10 +36,20 @@ apiClient.interceptors.response.use(
     const method = (config?.method || "").toLowerCase();
     const status = error?.response?.status;
     const isTransient = !status || status === 429 || status === 502 || status === 503 || status === 504;
-    if (config && method === "get" && isTransient) {
+    const hasIdempotentKey =
+      method === "post" &&
+      ((typeof config?.data === "string" && config.data.includes('"clientMessageId"')) ||
+        Boolean(
+          config?.data &&
+            typeof config.data === "object" &&
+            "clientMessageId" in config.data &&
+            config.data.clientMessageId
+        ));
+    if (config && (method === "get" || hasIdempotentKey) && isTransient) {
       config.__retryCount = (config.__retryCount || 0) + 1;
       if (config.__retryCount <= 2) {
-        await new Promise((resolve) => setTimeout(resolve, 800 * config.__retryCount));
+        const delayMs = (method === "post" ? 700 : 800) * config.__retryCount;
+        await new Promise((resolve) => setTimeout(resolve, delayMs));
         return apiClient(config);
       }
     }
@@ -219,11 +229,12 @@ export const mobileApi = {
     text: string,
     replyTo?: { senderName: string; body: string },
     sender?: any,
-    imageUrl?: string
+    imageUrl?: string,
+    clientMessageId?: string
   ): Promise<ChatMessage> {
     const res = await apiClient.post<ChatMessage>(
       `/communities/${communityId}/messages`,
-      { text, replyTo, sender, imageUrl }
+      { text, replyTo, sender, imageUrl, clientMessageId }
     );
     return res.data;
   },
@@ -277,11 +288,12 @@ export const mobileApi = {
     sender?: any,
     replyTo?: { senderName: string; body: string },
     recipientInfo?: { name: string; initials?: string; avatarColor?: string; role?: string },
-    imageUrl?: string
+    imageUrl?: string,
+    clientMessageId?: string
   ): Promise<ChatMessage> {
     const res = await apiClient.post<ChatMessage>(
       `/communities/${communityId}/private-chats/${recipientId}/messages`,
-      { text, sender, replyTo, recipientInfo, imageUrl }
+      { text, sender, replyTo, recipientInfo, imageUrl, clientMessageId }
     );
     return res.data;
   },
