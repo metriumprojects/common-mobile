@@ -671,9 +671,9 @@ export default function PrivateChatScreen() {
             renderItem={renderMessage}
             ListHeaderComponent={renderContextHeader}
             contentContainerStyle={styles.messageList}
-            onContentSizeChange={() =>
-              flatListRef.current?.scrollToEnd({ animated: false })
-            }
+            initialNumToRender={15}
+            maxToRenderPerBatch={10}
+            windowSize={7}
           />
         )}
 

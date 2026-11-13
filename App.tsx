@@ -43,7 +43,7 @@ function MainTabs() {
       screenOptions={{
         headerShown: false,
         animation: 'none',
-        lazy: false,
+        lazy: true,
         sceneStyle: { backgroundColor: figmaColors.bg },
       }}
     >
