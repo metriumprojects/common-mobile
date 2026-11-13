@@ -1,32 +1,34 @@
 import UIKit
+import Expo
 import React
 import React_RCTAppDelegate
 import ReactAppDependencyProvider
 
 @main
-class AppDelegate: UIResponder, UIApplicationDelegate {
+class AppDelegate: ExpoAppDelegate {
   var window: UIWindow?
 
   var reactNativeDelegate: ReactNativeDelegate?
   var reactNativeFactory: RCTReactNativeFactory?
   var launchOptions: [UIApplication.LaunchOptionsKey: Any]?
 
-  func application(
+  public override func application(
     _ application: UIApplication,
     didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]? = nil
   ) -> Bool {
     let delegate = ReactNativeDelegate()
-    let factory = RCTReactNativeFactory(delegate: delegate)
+    let factory = ExpoReactNativeFactory(delegate: delegate)
     delegate.dependencyProvider = RCTAppDependencyProvider()
 
     reactNativeDelegate = delegate
     reactNativeFactory = factory
+    bindReactNativeFactory(factory)
     self.launchOptions = launchOptions
 
-    return true
+    return super.application(application, didFinishLaunchingWithOptions: launchOptions)
   }
 
-  func application(
+  public override func application(
     _ application: UIApplication,
     configurationForConnecting connectingSceneSession: UISceneSession,
     options: UIScene.ConnectionOptions
@@ -37,6 +39,14 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
     )
     config.delegateClass = SceneDelegate.self
     return config
+  }
+
+  public override func application(
+    _ app: UIApplication,
+    open url: URL,
+    options: [UIApplication.OpenURLOptionsKey: Any] = [:]
+  ) -> Bool {
+    return super.application(app, open: url, options: options) || RCTLinkingManager.application(app, open: url, options: options)
   }
 }
 
@@ -65,9 +75,14 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
 
     window.makeKeyAndVisible()
   }
+
+  func scene(_ scene: UIScene, openURLContexts URLContexts: Set<UIOpenURLContext>) {
+    guard let url = URLContexts.first?.url else { return }
+    _ = RCTLinkingManager.application(UIApplication.shared, open: url, options: [:])
+  }
 }
 
-class ReactNativeDelegate: RCTDefaultReactNativeFactoryDelegate {
+class ReactNativeDelegate: ExpoReactNativeFactoryDelegate {
   override func sourceURL(for bridge: RCTBridge) -> URL? {
     self.bundleURL()
   }

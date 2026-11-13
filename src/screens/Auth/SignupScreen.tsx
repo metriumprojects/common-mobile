@@ -16,11 +16,14 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import Toast from 'react-native-toast-message';
 import { mobileApi } from '../../api/client';
 import { useAuth } from '../../context/AuthContext';
+import { useSocialAuth } from '../../hooks/useSocialAuth';
+import { SocialAuthButtons } from '../../components/SocialAuthButtons';
 
 export default function SignupScreen() {
   const navigation = useNavigation<any>();
   const { signUp, setActive, isLoaded } = useSignUp();
   const { login } = useAuth();
+  const { handleSocialAuth, oauthLoading } = useSocialAuth();
 
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
@@ -194,6 +197,34 @@ export default function SignupScreen() {
 
                 <TouchableOpacity
                   style={styles.resendBtn}
+                  onPress={async () => {
+                    if (!isLoaded || !signUp || loading) return;
+                    setErrorMsg('');
+                    setLoading(true);
+                    try {
+                      await signUp.prepareEmailAddressVerification({ strategy: 'email_code' });
+                      Toast.show({
+                        type: 'info',
+                        text1: 'Code Resent',
+                        text2: `Check ${email.trim()} (and spam) for your 6-digit code`,
+                      });
+                    } catch (err: any) {
+                      setErrorMsg(
+                        err?.errors?.[0]?.longMessage ||
+                          err?.errors?.[0]?.message ||
+                          'Unable to resend code.'
+                      );
+                    } finally {
+                      setLoading(false);
+                    }
+                  }}
+                  activeOpacity={0.7}
+                >
+                  <Text style={styles.resendBtnText}>Resend verification code</Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={styles.resendBtn}
                   onPress={() => setPendingVerification(false)}
                   activeOpacity={0.7}
                 >
@@ -202,6 +233,11 @@ export default function SignupScreen() {
               </>
             ) : (
               <>
+                <SocialAuthButtons
+                  oauthLoading={oauthLoading}
+                  disabled={loading}
+                  onPressProvider={(strategy) => handleSocialAuth(strategy, setErrorMsg)}
+                />
                 {/* Full Name */}
                 <View style={styles.inputGroup}>
                   <Text style={styles.label}>Full name</Text>

@@ -4,13 +4,21 @@
   "expo": {
     "name": "Common Community",
     "slug": "common-community",
+    "scheme": "common",
     "version": "1.0.0",
+    "runtimeVersion": "1.0.0",
+    "updates": {
+      "url": "https://u.expo.dev/82c203e7-cbdf-4567-8db6-1f2c50b16c04"
+    },
+    "plugins": [
+      "expo-web-browser"
+    ],
     "orientation": "portrait",
     "userInterfaceStyle": "light",
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.common.community",
-      "buildNumber": "8"
+      "buildNumber": "9"
     },
     "android": {
       "package": "com.common.community",

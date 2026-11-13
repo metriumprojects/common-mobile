@@ -16,21 +16,86 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import Toast from 'react-native-toast-message';
 import { mobileApi } from '../../api/client';
 import { useAuth } from '../../context/AuthContext';
+import { useSocialAuth } from '../../hooks/useSocialAuth';
+import { SocialAuthButtons } from '../../components/SocialAuthButtons';
 
 export default function LoginScreen() {
   const navigation = useNavigation<any>();
   const { signIn, setActive, isLoaded } = useSignIn();
   const { login } = useAuth();
+  const { handleSocialAuth, oauthLoading } = useSocialAuth();
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const [useEmailCode, setUseEmailCode] = useState(false);
+  const [pendingCode, setPendingCode] = useState(false);
+  const [verificationCode, setVerificationCode] = useState('');
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
 
+  const finishSignIn = async (sessionId: string) => {
+    await setActive!({ session: sessionId });
+
+    const syncRes = await mobileApi.syncUser({
+      clerkId: sessionId,
+      email: email.trim(),
+      name: email.split('@')[0],
+    });
+
+    Toast.show({
+      type: 'success',
+      text1: 'Welcome back',
+      text2: `Logged in as ${syncRes.name || email}`,
+    });
+
+    navigation.reset({
+      index: 0,
+      routes: [{ name: 'Home' }],
+    });
+  };
+
+  const sendEmailCodeFactor = async (attempt: any) => {
+    const firstEmailFactor = attempt?.supportedFirstFactors?.find(
+      (f: any) => f.strategy === 'email_code'
+    );
+    if (firstEmailFactor?.emailAddressId && signIn) {
+      await signIn.prepareFirstFactor({
+        strategy: 'email_code',
+        emailAddressId: firstEmailFactor.emailAddressId,
+      });
+      setPendingCode(true);
+      Toast.show({
+        type: 'info',
+        text1: 'Code Sent',
+        text2: `Check ${email.trim()} (and spam) for your 6-digit code`,
+      });
+      return true;
+    }
+
+    const secondEmailFactor = attempt?.supportedSecondFactors?.find(
+      (f: any) => f.strategy === 'email_code'
+    );
+    if (secondEmailFactor && signIn) {
+      await signIn.prepareSecondFactor({ strategy: 'email_code' });
+      setPendingCode(true);
+      Toast.show({
+        type: 'info',
+        text1: 'Verification Code Sent',
+        text2: `Check ${email.trim()} (and spam) for your 6-digit code`,
+      });
+      return true;
+    }
+    return false;
+  };
+
   const handleLogin = async () => {
-    if (!email.trim() || !password) {
-      setErrorMsg('Please enter both email and password.');
+    if (!email.trim()) {
+      setErrorMsg('Please enter your email address.');
+      return;
+    }
+    if (!useEmailCode && !password) {
+      setErrorMsg('Please enter your password or switch to Email Code.');
       return;
     }
     setErrorMsg('');
@@ -42,33 +107,31 @@ export default function LoginScreen() {
         return;
       }
 
+      if (useEmailCode) {
+        const attempt = await signIn.create({ identifier: email.trim() });
+        if (attempt.status === 'complete' && attempt.createdSessionId) {
+          await finishSignIn(attempt.createdSessionId);
+          return;
+        }
+        const sent = await sendEmailCodeFactor(attempt);
+        if (!sent) {
+          setErrorMsg('Email code sign-in is not enabled for this account.');
+        }
+        return;
+      }
+
       const completeSignIn = await signIn.create({
         identifier: email.trim(),
         password,
       });
 
-      if (completeSignIn.status === 'complete') {
-        await setActive({ session: completeSignIn.createdSessionId });
-
-        // Sync user to MongoDB Atlas
-        const syncRes = await mobileApi.syncUser({
-          clerkId: completeSignIn.createdSessionId,
-          email: email.trim(),
-          name: email.split('@')[0],
-        });
-
-        Toast.show({
-          type: 'success',
-          text1: 'Welcome back',
-          text2: `Logged in as ${syncRes.name || email}`,
-        });
-
-        navigation.reset({
-          index: 0,
-          routes: [{ name: 'Home' }],
-        });
+      if (completeSignIn.status === 'complete' && completeSignIn.createdSessionId) {
+        await finishSignIn(completeSignIn.createdSessionId);
       } else {
-        setErrorMsg('Additional verification is required to complete sign in.');
+        const sent = await sendEmailCodeFactor(completeSignIn);
+        if (!sent) {
+          setErrorMsg('Additional verification is required to complete sign in.');
+        }
       }
     } catch (err: any) {
       const message =
@@ -82,6 +145,51 @@ export default function LoginScreen() {
         text1: 'Authentication Failed',
         text2: message,
       });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleVerifyEmailCode = async () => {
+    if (!verificationCode.trim()) {
+      setErrorMsg('Please enter the 6-digit code.');
+      return;
+    }
+    setErrorMsg('');
+    setLoading(true);
+
+    try {
+      if (!isLoaded || !signIn) {
+        setErrorMsg('Authentication service is initializing. Please try again.');
+        return;
+      }
+
+      const attempt =
+        signIn.status === 'needs_second_factor'
+          ? await signIn.attemptSecondFactor({
+              strategy: 'email_code',
+              code: verificationCode.trim(),
+            })
+          : await signIn.attemptFirstFactor({
+              strategy: 'email_code',
+              code: verificationCode.trim(),
+            });
+
+      if (attempt.status === 'complete' && attempt.createdSessionId) {
+        await finishSignIn(attempt.createdSessionId);
+      } else {
+        const sent = await sendEmailCodeFactor(attempt);
+        if (!sent) {
+          setErrorMsg('Verification incomplete. Please try again.');
+        }
+      }
+    } catch (err: any) {
+      const message =
+        err?.errors?.[0]?.longMessage ||
+        err?.errors?.[0]?.message ||
+        err?.message ||
+        'Invalid verification code.';
+      setErrorMsg(message);
     } finally {
       setLoading(false);
     }
@@ -116,67 +224,146 @@ export default function LoginScreen() {
               </View>
             ) : null}
 
-            {/* Email Field */}
-            <View style={styles.inputGroup}>
-              <Text style={styles.label}>Email address</Text>
-              <TextInput
-                style={styles.input}
-                placeholder="name@example.com"
-                placeholderTextColor="#94A3B8"
-                keyboardType="email-address"
-                autoCapitalize="none"
-                autoCorrect={false}
-                value={email}
-                onChangeText={(t) => {
-                  setEmail(t);
-                  if (errorMsg) setErrorMsg('');
-                }}
-              />
-            </View>
+            {pendingCode ? (
+              <>
+                <View style={styles.inputGroup}>
+                  <Text style={styles.label}>6-digit code sent to {email}</Text>
+                  <TextInput
+                    style={styles.input}
+                    placeholder="123456"
+                    placeholderTextColor="#94A3B8"
+                    keyboardType="number-pad"
+                    maxLength={6}
+                    value={verificationCode}
+                    onChangeText={(t) => {
+                      setVerificationCode(t);
+                      if (errorMsg) setErrorMsg('');
+                    }}
+                  />
+                </View>
 
-            {/* Password Field */}
-            <View style={styles.inputGroup}>
-              <View style={styles.labelRow}>
-                <Text style={styles.label}>Password</Text>
-              </View>
-              <View style={styles.passwordInputWrapper}>
-                <TextInput
-                  style={[styles.input, styles.passwordInput]}
-                  placeholder="Enter your password"
-                  placeholderTextColor="#94A3B8"
-                  secureTextEntry={!showPassword}
-                  autoCapitalize="none"
-                  value={password}
-                  onChangeText={(t) => {
-                    setPassword(t);
-                    if (errorMsg) setErrorMsg('');
-                  }}
-                />
                 <TouchableOpacity
-                  style={styles.toggleVisibilityBtn}
-                  onPress={() => setShowPassword(!showPassword)}
+                  style={[styles.primaryButton, loading && styles.buttonDisabled]}
+                  onPress={handleVerifyEmailCode}
+                  disabled={loading}
+                  activeOpacity={0.8}
+                >
+                  {loading ? (
+                    <ActivityIndicator color="#FFFFFF" size="small" />
+                  ) : (
+                    <Text style={styles.primaryButtonText}>Verify & Sign In</Text>
+                  )}
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={styles.modeToggleBtn}
+                  onPress={() => {
+                    setPendingCode(false);
+                    setVerificationCode('');
+                  }}
                   activeOpacity={0.7}
                 >
-                  <Text style={styles.toggleVisibilityText}>
-                    {showPassword ? 'Hide' : 'Show'}
-                  </Text>
+                  <Text style={styles.linkText}>Back to sign in</Text>
                 </TouchableOpacity>
-              </View>
-            </View>
+              </>
+            ) : (
+              <>
+                <SocialAuthButtons
+                  oauthLoading={oauthLoading}
+                  disabled={loading}
+                  onPressProvider={(strategy) => handleSocialAuth(strategy, setErrorMsg)}
+                />
 
-            {/* Sign In Button */}
-            <TouchableOpacity
-              style={[styles.primaryButton, loading && styles.buttonDisabled]}
-              onPress={handleLogin}
-              disabled={loading}
-              activeOpacity={0.8}
-            >
-              {loading ? (
-                <ActivityIndicator color="#FFFFFF" size="small" />
-              ) : (
-                <Text style={styles.primaryButtonText}>Continue</Text>
-              )}
-            </TouchableOpacity>
+                {/* Email Field */}
+                <View style={styles.inputGroup}>
+                  <Text style={styles.label}>Email address</Text>
+                  <TextInput
+                    style={styles.input}
+                    placeholder="name@example.com"
+                    placeholderTextColor="#94A3B8"
+                    keyboardType="email-address"
+                    autoCapitalize="none"
+                    autoCorrect={false}
+                    value={email}
+                    onChangeText={(t) => {
+                      setEmail(t);
+                      if (errorMsg) setErrorMsg('');
+                    }}
+                  />
+                </View>
+
+                {/* Password Field */}
+                {!useEmailCode ? (
+                  <View style={styles.inputGroup}>
+                    <View style={styles.labelRow}>
+                      <Text style={styles.label}>Password</Text>
+                      <TouchableOpacity
+                        onPress={() => {
+                          setUseEmailCode(true);
+                          setErrorMsg('');
+                        }}
+                        activeOpacity={0.7}
+                      >
+                        <Text style={styles.modeSwitchLink}>Use email code</Text>
+                      </TouchableOpacity>
+                    </View>
+                    <View style={styles.passwordInputWrapper}>
+                      <TextInput
+                        style={[styles.input, styles.passwordInput]}
+                        placeholder="Enter your password"
+                        placeholderTextColor="#94A3B8"
+                        secureTextEntry={!showPassword}
+                        autoCapitalize="none"
+                        value={password}
+                        onChangeText={(t) => {
+                          setPassword(t);
+                          if (errorMsg) setErrorMsg('');
+                        }}
+                      />
+                      <TouchableOpacity
+                        style={styles.toggleVisibilityBtn}
+                        onPress={() => setShowPassword(!showPassword)}
+                        activeOpacity={0.7}
+                      >
+                        <Text style={styles.toggleVisibilityText}>
+                          {showPassword ? 'Hide' : 'Show'}
+                        </Text>
+                      </TouchableOpacity>
+                    </View>
+                  </View>
+                ) : (
+                  <TouchableOpacity
+                    style={styles.modeToggleBtn}
+                    onPress={() => {
+                      setUseEmailCode(false);
+                      setErrorMsg('');
+                    }}
+                    activeOpacity={0.7}
+                  >
+                    <Text style={styles.modeSwitchLink}>Use password instead</Text>
+                  </TouchableOpacity>
+                )}
+
+                {/* Sign In Button */}
+                <TouchableOpacity
+                  style={[
+                    styles.primaryButton,
+                    (loading || Boolean(oauthLoading)) && styles.buttonDisabled,
+                  ]}
+                  onPress={handleLogin}
+                  disabled={loading || Boolean(oauthLoading)}
+                  activeOpacity={0.8}
+                >
+                  {loading ? (
+                    <ActivityIndicator color="#FFFFFF" size="small" />
+                  ) : (
+                    <Text style={styles.primaryButtonText}>
+                      {useEmailCode ? 'Send Email Code' : 'Continue'}
+                    </Text>
+                  )}
+                </TouchableOpacity>
+              </>
+            )}
 
             {/* Switch to Signup */}
             <View style={styles.footerRow}>
@@ -330,5 +517,15 @@ const styles = StyleSheet.create({
     color: '#10B981',
     fontSize: 13,
     fontWeight: '600',
+  },
+  modeSwitchLink: {
+    color: '#10B981',
+    fontSize: 12,
+    fontWeight: '600',
+    marginBottom: 8,
+  },
+  modeToggleBtn: {
+    alignItems: 'center',
+    marginBottom: 12,
   },
 });
