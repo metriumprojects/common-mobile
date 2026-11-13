@@ -82,11 +82,13 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
                 '',
               profilePicture: clerkUser.user?.imageUrl || '',
             };
-            setToken(clerkJwt);
-            setUser(userData);
-            setIsAuthenticated(true);
             await storeAuthData(clerkJwt, userData);
-            setLoading(false);
+            if (!isCancelled) {
+              setToken(clerkJwt);
+              setUser(userData);
+              setIsAuthenticated(true);
+              setLoading(false);
+            }
             return;
           }
         } catch (err) {

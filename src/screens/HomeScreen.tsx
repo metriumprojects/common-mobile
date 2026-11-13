@@ -55,6 +55,7 @@ export default function HomeScreen() {
   const [loading, setLoading] = useState(
     () => !getCachedCommunities(user?.id)
   );
+  const [loadError, setLoadError] = useState(false);
 
   // Create Community Modal State
   const [showCreateModal, setShowCreateModal] = useState(false);
@@ -68,6 +69,7 @@ export default function HomeScreen() {
 
   const fetchCommunities = useCallback(async () => {
     try {
+      setLoadError(false);
       setCurrentUser((prev) => (prev && prev.id !== user?.id ? null : prev));
       if (!getCachedCommunities(user?.id)) {
         const disk = await hydrateCommunitiesFromDisk(user?.id);
@@ -92,6 +94,7 @@ export default function HomeScreen() {
       }
     } catch (err) {
       console.warn('Error fetching communities:', err);
+      setLoadError(true);
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -550,33 +553,56 @@ export default function HomeScreen() {
                 <ChatBubbleIcon size={26} color={figmaColors.ink} />
               </View>
               <Text style={styles.emptyTitle}>
-                {searchQuery ? 'No matching communities' : 'No communities yet'}
+                {searchQuery
+                  ? 'No matching communities'
+                  : loadError
+                    ? 'Could not load communities'
+                    : 'No communities yet'}
               </Text>
               <Text style={styles.emptySubtitle}>
                 {searchQuery
                   ? 'Try another search term or browse Discover.'
-                  : 'Create your first community or discover existing spaces to start live channels and scoped side-chats.'}
+                  : loadError
+                    ? 'Connection timed out or server is waking up. Tap below to retry.'
+                    : 'Create your first community or discover existing spaces to start live channels and scoped side-chats.'}
               </Text>
-              <View style={{ flexDirection: 'row', gap: 10, marginTop: 18 }}>
-                <TouchableOpacity
-                  style={styles.emptyCreateButton}
-                  onPress={() => setShowCreateModal(true)}
-                  activeOpacity={0.85}
-                >
-                  <Text style={styles.emptyCreateButtonText}>
-                    + Create Space
-                  </Text>
-                </TouchableOpacity>
+              {!searchQuery && loadError ? (
+                <View style={{ flexDirection: 'row', gap: 10, marginTop: 18 }}>
+                  <TouchableOpacity
+                    style={styles.emptyCreateButton}
+                    onPress={() => {
+                      setLoading(true);
+                      fetchCommunities();
+                    }}
+                    activeOpacity={0.85}
+                  >
+                    <Text style={styles.emptyCreateButtonText}>
+                      Tap to Retry
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+              ) : (
+                <View style={{ flexDirection: 'row', gap: 10, marginTop: 18 }}>
+                  <TouchableOpacity
+                    style={styles.emptyCreateButton}
+                    onPress={() => setShowCreateModal(true)}
+                    activeOpacity={0.85}
+                  >
+                    <Text style={styles.emptyCreateButtonText}>
+                      + Create Space
+                    </Text>
+                  </TouchableOpacity>
 
-                <TouchableOpacity
-                  style={[styles.emptyDiscoverButton, { flexDirection: 'row', alignItems: 'center', gap: 6 }]}
-                  onPress={() => navigation.navigate('Discover')}
-                  activeOpacity={0.85}
-                >
-                  <CompassIcon size={15} color={figmaColors.ink} />
-                  <Text style={styles.emptyDiscoverButtonText}>Discover</Text>
-                </TouchableOpacity>
-              </View>
+                  <TouchableOpacity
+                    style={[styles.emptyDiscoverButton, { flexDirection: 'row', alignItems: 'center', gap: 6 }]}
+                    onPress={() => navigation.navigate('Discover')}
+                    activeOpacity={0.85}
+                  >
+                    <CompassIcon size={15} color={figmaColors.ink} />
+                    <Text style={styles.emptyDiscoverButtonText}>Discover</Text>
+                  </TouchableOpacity>
+                </View>
+              )}
             </View>
           }
         />

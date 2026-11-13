@@ -65,11 +65,13 @@ export default function DiscoverScreen() {
   const [loading, setLoading] = useState(
     () => !getCachedCommunities(user?.id)
   );
+  const [loadError, setLoadError] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [togglingId, setTogglingId] = useState<string | null>(null);
 
   const fetchCommunities = useCallback(async () => {
     try {
+      setLoadError(false);
       if (!getCachedCommunities(user?.id)) {
         const disk = await hydrateCommunitiesFromDisk(user?.id);
         if (disk) {
@@ -84,6 +86,7 @@ export default function DiscoverScreen() {
       }
     } catch (err) {
       console.warn('Error loading discover communities:', err);
+      setLoadError(true);
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -558,10 +561,36 @@ export default function DiscoverScreen() {
               <View style={{ marginBottom: 10 }}>
                 <CompassIcon size={32} color={figmaColors.inkMuted} />
               </View>
-              <Text style={styles.emptyTitle}>No matching communities</Text>
-              <Text style={styles.emptySubtitle}>
-                Try adjusting your search or category filter.
+              <Text style={styles.emptyTitle}>
+                {loadError && !searchTopic && !searchLocation
+                  ? 'Could not load communities'
+                  : 'No matching communities'}
               </Text>
+              <Text style={styles.emptySubtitle}>
+                {loadError && !searchTopic && !searchLocation
+                  ? 'Connection timed out or server is waking up. Tap below to retry.'
+                  : 'Try adjusting your search or category filter.'}
+              </Text>
+              {loadError && !searchTopic && !searchLocation ? (
+                <TouchableOpacity
+                  onPress={() => {
+                    setLoading(true);
+                    fetchCommunities();
+                  }}
+                  style={{
+                    marginTop: 14,
+                    backgroundColor: figmaColors.ink,
+                    paddingHorizontal: 20,
+                    paddingVertical: 10,
+                    borderRadius: 999,
+                  }}
+                  activeOpacity={0.85}
+                >
+                  <Text style={{ color: '#FFFFFF', fontWeight: '700', fontSize: 13 }}>
+                    Tap to Retry
+                  </Text>
+                </TouchableOpacity>
+              ) : null}
             </View>
           }
         />

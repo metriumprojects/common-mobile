@@ -19,6 +19,11 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRoute, useNavigation } from '@react-navigation/native';
 import Toast from 'react-native-toast-message';
 import { mobileApi } from '../api/client';
+import {
+  getCachedCommunities,
+  setCachedCommunities,
+  hydrateCommunitiesFromDisk,
+} from '../api/dataCache';
 import { mobileSocket } from '../api/socket';
 import { Community, ChatMessage } from '../types';
 import { useAuth } from '../context/AuthContext';
@@ -51,11 +56,19 @@ export default function CommunityChatScreen() {
   const { user } = useAuth();
   const { communityId } = route.params || {};
 
-  const [community, setCommunity] = useState<Community | null>(null);
-  const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const initialCommunity = (() => {
+    const cached = getCachedCommunities(user?.id);
+    return cached?.find((c) => c.id === communityId) || null;
+  })();
+
+  const [community, setCommunity] = useState<Community | null>(initialCommunity);
+  const [messages, setMessages] = useState<ChatMessage[]>(
+    () => initialCommunity?.groupMessages || []
+  );
   const [inputText, setInputText] = useState('');
   const [replyTarget, setReplyTarget] = useState<ChatMessage | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(!initialCommunity);
+  const [loadError, setLoadError] = useState(false);
   const [sending, setSending] = useState(false);
   const [typingUser, setTypingUser] = useState<string | null>(null);
 
@@ -94,14 +107,29 @@ export default function CommunityChatScreen() {
 
   const fetchCommunityData = useCallback(async () => {
     try {
+      setLoadError(false);
+      if (!getCachedCommunities(user?.id)) {
+        const disk = await hydrateCommunitiesFromDisk(user?.id);
+        const diskComm = disk?.find((c) => c.id === communityId);
+        if (diskComm) {
+          setCommunity(diskComm);
+          setMessages(diskComm.groupMessages || []);
+          setLoading(false);
+        }
+      }
       const all = await mobileApi.getCommunities(user?.id);
+      if (Array.isArray(all)) {
+        setCachedCommunities(user?.id, all);
+      }
       const current = all.find((c) => c.id === communityId) || all[0];
       if (current) {
         setCommunity(current);
         setMessages(current.groupMessages || []);
+        setLoadError(false);
       }
     } catch (err) {
       console.warn('Error loading community chat:', err);
+      setLoadError(true);
     } finally {
       setLoading(false);
     }
@@ -1159,6 +1187,32 @@ export default function CommunityChatScreen() {
         {loading ? (
           <View style={styles.loadingContainer}>
             <ActivityIndicator size="large" color={figmaColors.ink} />
+          </View>
+        ) : !community && loadError ? (
+          <View style={styles.loadingContainer}>
+            <Text style={{ fontSize: 16, fontWeight: '700', color: figmaColors.ink, marginBottom: 6 }}>
+              Could not load chat
+            </Text>
+            <Text style={{ fontSize: 13, color: figmaColors.inkMuted, textAlign: 'center', marginBottom: 16, paddingHorizontal: 32 }}>
+              Connection timed out or server is waking up.
+            </Text>
+            <TouchableOpacity
+              onPress={() => {
+                setLoading(true);
+                fetchCommunityData();
+              }}
+              style={{
+                backgroundColor: figmaColors.ink,
+                paddingHorizontal: 20,
+                paddingVertical: 10,
+                borderRadius: 999,
+              }}
+              activeOpacity={0.85}
+            >
+              <Text style={{ color: '#FFFFFF', fontWeight: '700', fontSize: 13 }}>
+                Tap to Retry
+              </Text>
+            </TouchableOpacity>
           </View>
         ) : (
           <FlatList

@@ -16,6 +16,11 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRoute, useNavigation } from '@react-navigation/native';
 import Toast from 'react-native-toast-message';
 import { mobileApi } from '../api/client';
+import {
+  getCachedCommunities,
+  setCachedCommunities,
+  hydrateCommunitiesFromDisk,
+} from '../api/dataCache';
 import { mobileSocket } from '../api/socket';
 import { Community, ChatMessage, UserProfile } from '../types';
 import { useAuth } from '../context/AuthContext';
@@ -51,20 +56,34 @@ export default function PrivateChatScreen() {
     recipientAvatarColor: paramAvatarColor,
   } = route.params || {};
 
-  const [community, setCommunity] = useState<Community | null>(null);
-  const [recipient, setRecipient] = useState<UserProfile>({
-    id: recipientId || 'member',
-    name: paramRecipientName || 'Member',
-    initials: (paramRecipientName || 'M')[0].toUpperCase(),
-    avatarColor: paramAvatarColor || '#8B5CF6',
-    role: paramRecipientRole || 'Community Member',
-    online: true,
-    joinedDate: 'Nov 2026',
-  });
-  const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const initialCachedCommunity = (() => {
+    const cached = getCachedCommunities(user?.id);
+    return cached?.find((c) => c.id === communityId) || null;
+  })();
+  const initialSideChat = initialCachedCommunity?.privateChats?.find(
+    (pc) => pc.recipient.id === recipientId
+  );
+
+  const [community, setCommunity] = useState<Community | null>(initialCachedCommunity);
+  const [recipient, setRecipient] = useState<UserProfile>(
+    () =>
+      initialSideChat?.recipient || {
+        id: recipientId || 'member',
+        name: paramRecipientName || 'Member',
+        initials: (paramRecipientName || 'M')[0].toUpperCase(),
+        avatarColor: paramAvatarColor || '#8B5CF6',
+        role: paramRecipientRole || 'Community Member',
+        online: true,
+        joinedDate: 'Nov 2026',
+      }
+  );
+  const [messages, setMessages] = useState<ChatMessage[]>(
+    () => initialSideChat?.messages || []
+  );
   const [inputText, setInputText] = useState('');
   const [replyTarget, setReplyTarget] = useState<ChatMessage | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(!initialSideChat);
+  const [loadError, setLoadError] = useState(false);
   const [sending, setSending] = useState(false);
   const [isTyping, setIsTyping] = useState(false);
   const [muted, setMuted] = useState(false);
@@ -84,7 +103,26 @@ export default function PrivateChatScreen() {
 
   const fetchPrivateMessages = useCallback(async () => {
     try {
+      setLoadError(false);
+      if (!getCachedCommunities(user?.id)) {
+        const disk = await hydrateCommunitiesFromDisk(user?.id);
+        const diskComm = disk?.find((c) => c.id === communityId);
+        if (diskComm) {
+          setCommunity(diskComm);
+          const diskSide = diskComm.privateChats?.find(
+            (pc) => pc.recipient.id === recipientId
+          );
+          if (diskSide) {
+            setRecipient(diskSide.recipient);
+            setMessages(diskSide.messages || []);
+            setLoading(false);
+          }
+        }
+      }
       const all = await mobileApi.getCommunities(user?.id);
+      if (Array.isArray(all)) {
+        setCachedCommunities(user?.id, all);
+      }
       const current = all.find((c) => c.id === communityId) || all[0];
       if (current) {
         setCommunity(current);
@@ -98,9 +136,11 @@ export default function PrivateChatScreen() {
             mobileApi.markPrivateChatRead(current.id, recipientId).catch(() => {});
           }
         }
+        setLoadError(false);
       }
     } catch (err) {
       console.warn('Error fetching private messages:', err);
+      setLoadError(true);
     } finally {
       setLoading(false);
     }
@@ -743,6 +783,32 @@ export default function PrivateChatScreen() {
         {loading ? (
           <View style={styles.loadingContainer}>
             <ActivityIndicator size="large" color={figmaColors.ink} />
+          </View>
+        ) : !community && messages.length === 0 && loadError ? (
+          <View style={styles.loadingContainer}>
+            <Text style={{ fontSize: 16, fontWeight: '700', color: figmaColors.ink, marginBottom: 6 }}>
+              Could not load private chat
+            </Text>
+            <Text style={{ fontSize: 13, color: figmaColors.inkMuted, textAlign: 'center', marginBottom: 16, paddingHorizontal: 32 }}>
+              Connection timed out or server is waking up.
+            </Text>
+            <TouchableOpacity
+              onPress={() => {
+                setLoading(true);
+                fetchPrivateMessages();
+              }}
+              style={{
+                backgroundColor: figmaColors.ink,
+                paddingHorizontal: 20,
+                paddingVertical: 10,
+                borderRadius: 999,
+              }}
+              activeOpacity={0.85}
+            >
+              <Text style={{ color: '#FFFFFF', fontWeight: '700', fontSize: 13 }}>
+                Tap to Retry
+              </Text>
+            </TouchableOpacity>
           </View>
         ) : (
           <FlatList
