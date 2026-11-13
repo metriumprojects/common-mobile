@@ -110,19 +110,36 @@ export default function CommunityChatScreen() {
   useEffect(() => {
     fetchCommunityData();
 
-    if (communityId) {
-      mobileSocket.emit('join-community', communityId);
-    }
+    const joinRoom = () => {
+      if (communityId) {
+        mobileSocket.emit('join-community', communityId);
+      }
+      if (user?.id) {
+        mobileSocket.emit('user-online', user.id);
+      }
+    };
+    joinRoom();
 
     const handleNewGroupMessage = (msg: ChatMessage) => {
       if (msg.communityId !== communityId) return;
       setMessages((prev) => {
         if (prev.some((m) => m.id === msg.id)) return prev;
+        const tempIdx = prev.findIndex(
+          (m) =>
+            m.id.startsWith('temp-') &&
+            m.senderId === msg.senderId &&
+            m.body === msg.body
+        );
+        if (tempIdx !== -1) {
+          const next = [...prev];
+          next[tempIdx] = msg;
+          return next;
+        }
         return [...prev, msg];
       });
       setTimeout(() => {
         flatListRef.current?.scrollToEnd({ animated: true });
-      }, 100);
+      }, 60);
     };
 
     const handleMessageLiked = ({ messageId, likes, userLiked }: any) => {
@@ -211,6 +228,7 @@ export default function CommunityChatScreen() {
       }
     };
 
+    mobileSocket.on('connect', joinRoom);
     mobileSocket.on('new-group-message', handleNewGroupMessage);
     mobileSocket.on('message-liked', handleMessageLiked);
     mobileSocket.on('message-reaction-updated', handleReactionUpdated);
@@ -228,6 +246,7 @@ export default function CommunityChatScreen() {
     }
 
     return () => {
+      mobileSocket.off('connect', joinRoom);
       mobileSocket.off('new-group-message', handleNewGroupMessage);
       mobileSocket.off('message-liked', handleMessageLiked);
       mobileSocket.off('message-reaction-updated', handleReactionUpdated);
@@ -256,45 +275,91 @@ export default function CommunityChatScreen() {
     }, 1500);
   };
 
-  const handleSendMessage = async () => {
-    if (!inputText.trim() || sending) return;
-    const textToSend = inputText.trim();
-    setInputText('');
-    setSending(true);
-    mobileSocket.emit('stop-typing', { communityId, isPrivate: false });
+  const sendOptimisticGroupMessage = async (
+    textToSend: string,
+    replyTo?: { senderName: string; body: string },
+    retryTempId?: string
+  ) => {
+    const tempId = retryTempId || `temp-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
+    const senderName = user?.name || user?.fullName || 'Community Member';
+    const senderData = {
+      id: user?.id || 'me',
+      name: senderName,
+      initials: senderName[0].toUpperCase(),
+      avatarColor: '#059669',
+      role: 'Member',
+    };
+
+    if (retryTempId) {
+      setMessages((prev) =>
+        prev.map((m) => (m.id === retryTempId ? { ...m, status: 'sending' } : m))
+      );
+    } else {
+      const optimisticMsg: ChatMessage = {
+        id: tempId,
+        communityId: community?.id || communityId,
+        senderId: senderData.id,
+        senderName: senderData.name,
+        senderInitials: senderData.initials,
+        senderAvatarColor: senderData.avatarColor,
+        senderRole: senderData.role,
+        body: textToSend,
+        timestamp: 'Sending...',
+        rawTime: Date.now(),
+        replyTo,
+        likes: 0,
+        reactions: {},
+        commentCount: 0,
+        comments: [],
+        status: 'sending',
+        isSelf: true,
+      };
+      setMessages((prev) => [...prev, optimisticMsg]);
+      setTimeout(() => {
+        flatListRef.current?.scrollToEnd({ animated: true });
+      }, 40);
+    }
 
     try {
-      const senderData = {
-        id: user?.id || 'me',
-        name: user?.name || user?.fullName || 'Community Member',
-        initials: (user?.name || user?.fullName || 'U')[0].toUpperCase(),
-        avatarColor: '#059669',
-        role: 'Member',
-      };
-
-      const replyTo = replyTarget
-        ? { senderName: replyTarget.senderName, body: replyTarget.body }
-        : undefined;
-
-      setReplyTarget(null);
-
-      await mobileApi.sendGroupMessage(
+      const sentMsg = await mobileApi.sendGroupMessage(
         community?.id || communityId,
         textToSend,
         replyTo,
         senderData
       );
-    } catch (err) {
+      setMessages((prev) => {
+        const alreadyHasReal = prev.some((m) => m.id === sentMsg.id);
+        if (alreadyHasReal) {
+          return prev.filter((m) => m.id !== tempId);
+        }
+        return prev.map((m) => (m.id === tempId ? sentMsg : m));
+      });
+    } catch (err: any) {
       console.error('Error sending message:', err);
-      setInputText(textToSend);
+      setMessages((prev) =>
+        prev.map((m) => (m.id === tempId ? { ...m, status: 'failed' } : m))
+      );
+      const serverMsg = err?.response?.data?.error;
       Toast.show({
         type: 'error',
-        text1: 'Message Failed',
-        text2: 'Could not send message. Please try again.',
+        text1: 'Message not sent',
+        text2: serverMsg || 'Check your connection and tap the message to retry.',
       });
-    } finally {
-      setSending(false);
     }
+  };
+
+  const handleSendMessage = async () => {
+    if (!inputText.trim()) return;
+    const textToSend = inputText.trim();
+    const replyTo = replyTarget
+      ? { senderName: replyTarget.senderName, body: replyTarget.body }
+      : undefined;
+
+    setInputText('');
+    setReplyTarget(null);
+    mobileSocket.emit('stop-typing', { communityId, isPrivate: false });
+
+    await sendOptimisticGroupMessage(textToSend, replyTo);
   };
 
   const handleToggleReaction = async (messageId: string, emoji: string) => {
@@ -813,9 +878,20 @@ export default function CommunityChatScreen() {
             ) : null}
 
             {isSelf ? (
-              <Text style={styles.selfTimestampText}>
-                {item.timestamp || 'Just now'}
-              </Text>
+              item.status === 'failed' ? (
+                <TouchableOpacity
+                  onPress={() => sendOptimisticGroupMessage(item.body, item.replyTo, item.id)}
+                  activeOpacity={0.7}
+                >
+                  <Text style={[styles.selfTimestampText, { color: '#DC2626', fontWeight: '700' }]}>
+                    Failed · Tap to retry
+                  </Text>
+                </TouchableOpacity>
+              ) : (
+                <Text style={styles.selfTimestampText}>
+                  {item.status === 'sending' ? 'Sending...' : item.timestamp || 'Just now'}
+                </Text>
+              )
             ) : null}
           </View>
 
@@ -1237,7 +1313,7 @@ export default function CommunityChatScreen() {
               !inputText.trim() && styles.sendButtonDisabled,
             ]}
             onPress={handleSendMessage}
-            disabled={!inputText.trim() || sending}
+            disabled={!inputText.trim()}
             activeOpacity={0.75}
           >
             <SendIcon

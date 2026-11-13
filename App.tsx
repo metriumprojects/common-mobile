@@ -15,7 +15,7 @@ import { NavigationContainer, DefaultTheme } from '@react-navigation/native';
 import { createStackNavigator, TransitionPresets } from '@react-navigation/stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { ClerkProvider } from '@clerk/clerk-expo';
-import Toast from 'react-native-toast-message';
+import Toast, { ToastConfig } from 'react-native-toast-message';
 import * as Updates from 'expo-updates';
 
 import { APP_CONFIG } from './src/config/appConfig';
@@ -35,6 +35,42 @@ import ProfileScreen from './src/screens/ProfileScreen';
 
 const Stack = createStackNavigator();
 const Tab = createBottomTabNavigator();
+
+const toastConfig: ToastConfig = {
+  success: ({ text1, text2, onPress }) => (
+    <View style={toastStyles.darkCard} onTouchEnd={() => onPress?.()}>
+      <View style={[toastStyles.badge, toastStyles.successBadge]}>
+        <Text style={toastStyles.successBadgeText}>✓</Text>
+      </View>
+      <View style={toastStyles.textWrap}>
+        {!!text1 && <Text style={toastStyles.darkTitle} numberOfLines={1}>{text1}</Text>}
+        {!!text2 && <Text style={toastStyles.darkSub} numberOfLines={2}>{text2}</Text>}
+      </View>
+    </View>
+  ),
+  error: ({ text1, text2, onPress }) => (
+    <View style={toastStyles.errorCard} onTouchEnd={() => onPress?.()}>
+      <View style={[toastStyles.badge, toastStyles.errorBadge]}>
+        <Text style={toastStyles.errorBadgeText}>!</Text>
+      </View>
+      <View style={toastStyles.textWrap}>
+        {!!text1 && <Text style={toastStyles.errorTitle} numberOfLines={1}>{text1}</Text>}
+        {!!text2 && <Text style={toastStyles.errorSub} numberOfLines={2}>{text2}</Text>}
+      </View>
+    </View>
+  ),
+  info: ({ text1, text2, onPress }) => (
+    <View style={toastStyles.darkCard} onTouchEnd={() => onPress?.()}>
+      <View style={[toastStyles.badge, toastStyles.infoBadge]}>
+        <View style={toastStyles.infoDot} />
+      </View>
+      <View style={toastStyles.textWrap}>
+        {!!text1 && <Text style={toastStyles.darkTitle} numberOfLines={1}>{text1}</Text>}
+        {!!text2 && <Text style={toastStyles.darkSub} numberOfLines={2}>{text2}</Text>}
+      </View>
+    </View>
+  ),
+};
 
 function MainTabs() {
   return (
@@ -214,7 +250,7 @@ export default function App() {
             >
               <RootNavigator />
             </NavigationContainer>
-            <Toast />
+            <Toast config={toastConfig} topOffset={54} />
           </AuthProvider>
         </ClerkProvider>
       </RootErrorBoundary>
@@ -288,5 +324,101 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontSize: 14,
     fontWeight: '600',
+  },
+});
+
+const toastStyles = StyleSheet.create({
+  darkCard: {
+    width: '90%',
+    maxWidth: 400,
+    backgroundColor: figmaColors.ink,
+    borderRadius: 16,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 11,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.16,
+    shadowRadius: 14,
+    elevation: 6,
+  },
+  errorCard: {
+    width: '90%',
+    maxWidth: 400,
+    backgroundColor: '#FEF2F2',
+    borderWidth: 1,
+    borderColor: '#FECACA',
+    borderRadius: 16,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 11,
+    shadowColor: '#991B1B',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.1,
+    shadowRadius: 14,
+    elevation: 5,
+  },
+  badge: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  successBadge: {
+    backgroundColor: figmaColors.brandLime,
+  },
+  successBadgeText: {
+    color: figmaColors.ink,
+    fontSize: 14,
+    fontWeight: '800',
+  },
+  errorBadge: {
+    backgroundColor: '#DC2626',
+  },
+  errorBadgeText: {
+    color: '#FFFFFF',
+    fontSize: 14,
+    fontWeight: '800',
+  },
+  infoBadge: {
+    backgroundColor: 'rgba(216, 255, 95, 0.18)',
+  },
+  infoDot: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    backgroundColor: figmaColors.brandLime,
+  },
+  textWrap: {
+    flex: 1,
+  },
+  darkTitle: {
+    color: '#FFFFFF',
+    fontSize: 13.5,
+    fontWeight: '700',
+    letterSpacing: -0.1,
+  },
+  darkSub: {
+    color: '#D1D5DB',
+    fontSize: 12,
+    marginTop: 1,
+    lineHeight: 16,
+  },
+  errorTitle: {
+    color: '#991B1B',
+    fontSize: 13.5,
+    fontWeight: '700',
+    letterSpacing: -0.1,
+  },
+  errorSub: {
+    color: '#B91C1C',
+    fontSize: 12,
+    marginTop: 1,
+    lineHeight: 16,
   },
 });

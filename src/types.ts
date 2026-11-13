@@ -43,7 +43,7 @@ export interface ChatMessage {
     body: string;
     timestamp: string;
   }>;
-  status?: "pending" | "sent" | "read";
+  status?: "pending" | "sending" | "sent" | "read" | "failed";
 }
 
 export interface PrivateSideChat {

@@ -109,6 +109,16 @@ export default function PrivateChatScreen() {
   useEffect(() => {
     fetchPrivateMessages();
 
+    const joinPrivateRoom = () => {
+      if (communityId) {
+        mobileSocket.emit('join-community', communityId);
+      }
+      if (user?.id) {
+        mobileSocket.emit('user-online', user.id);
+      }
+    };
+    joinPrivateRoom();
+
     const handleNewPrivateMessage = ({
       communityId: cId,
       recipientId: rId,
@@ -123,11 +133,22 @@ export default function PrivateChatScreen() {
       if (isRelevant) {
         setMessages((prev) => {
           if (prev.some((m) => m.id === message.id)) return prev;
+          const tempIdx = prev.findIndex(
+            (m) =>
+              m.id.startsWith('temp-') &&
+              m.senderId === message.senderId &&
+              m.body === message.body
+          );
+          if (tempIdx !== -1) {
+            const next = [...prev];
+            next[tempIdx] = message;
+            return next;
+          }
           return [...prev, message];
         });
         setTimeout(() => {
           flatListRef.current?.scrollToEnd({ animated: true });
-        }, 100);
+        }, 60);
       }
     };
 
@@ -168,6 +189,7 @@ export default function PrivateChatScreen() {
       }
     };
 
+    mobileSocket.on('connect', joinPrivateRoom);
     mobileSocket.on('new-private-message', handleNewPrivateMessage);
     mobileSocket.on('message-liked', handleMessageLiked);
     mobileSocket.on('message-reaction-updated', handleReactionUpdated);
@@ -176,6 +198,7 @@ export default function PrivateChatScreen() {
     mobileSocket.on('user-stop-typing', handleUserStopTyping);
 
     return () => {
+      mobileSocket.off('connect', joinPrivateRoom);
       mobileSocket.off('new-private-message', handleNewPrivateMessage);
       mobileSocket.off('message-liked', handleMessageLiked);
       mobileSocket.off('message-reaction-updated', handleReactionUpdated);
@@ -205,33 +228,51 @@ export default function PrivateChatScreen() {
     }, 1500);
   };
 
-  const handleSendMessage = async () => {
-    if (!inputText.trim() || sending) return;
-    const textToSend = inputText.trim();
-    setInputText('');
-    setSending(true);
-    mobileSocket.emit('stop-typing', {
-      communityId,
-      isPrivate: true,
-      senderId: user?.id,
-      recipientId,
-    });
+  const sendOptimisticPrivateMessage = async (
+    textToSend: string,
+    replyTo?: { senderName: string; body: string },
+    retryTempId?: string
+  ) => {
+    const tempId = retryTempId || `temp-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
+    const senderName = user?.name || user?.fullName || 'Community Member';
+    const senderData = {
+      id: user?.id || 'me',
+      name: senderName,
+      initials: senderName[0].toUpperCase(),
+      avatarColor: '#059669',
+    };
+
+    if (retryTempId) {
+      setMessages((prev) =>
+        prev.map((m) => (m.id === retryTempId ? { ...m, status: 'sending' } : m))
+      );
+    } else {
+      const optimisticMsg: ChatMessage = {
+        id: tempId,
+        communityId,
+        senderId: senderData.id,
+        senderName: senderData.name,
+        senderInitials: senderData.initials,
+        senderAvatarColor: senderData.avatarColor,
+        body: textToSend,
+        timestamp: 'Sending...',
+        rawTime: Date.now(),
+        replyTo,
+        likes: 0,
+        reactions: {},
+        commentCount: 0,
+        comments: [],
+        status: 'sending',
+        isSelf: true,
+      };
+      setMessages((prev) => [...prev, optimisticMsg]);
+      setTimeout(() => {
+        flatListRef.current?.scrollToEnd({ animated: true });
+      }, 40);
+    }
 
     try {
-      const senderData = {
-        id: user?.id || 'me',
-        name: user?.name || user?.fullName || 'Community Member',
-        initials: (user?.name || user?.fullName || 'U')[0].toUpperCase(),
-        avatarColor: '#059669',
-      };
-
-      const replyTo = replyTarget
-        ? { senderName: replyTarget.senderName, body: replyTarget.body }
-        : undefined;
-
-      setReplyTarget(null);
-
-      await mobileApi.sendPrivateMessage(
+      const sentMsg = await mobileApi.sendPrivateMessage(
         communityId,
         recipientId,
         textToSend,
@@ -244,17 +285,44 @@ export default function PrivateChatScreen() {
           role: recipient.role,
         }
       );
-    } catch (err) {
+      setMessages((prev) => {
+        const alreadyHasReal = prev.some((m) => m.id === sentMsg.id);
+        if (alreadyHasReal) {
+          return prev.filter((m) => m.id !== tempId);
+        }
+        return prev.map((m) => (m.id === tempId ? sentMsg : m));
+      });
+    } catch (err: any) {
       console.error('Error sending private message:', err);
-      setInputText(textToSend);
+      setMessages((prev) =>
+        prev.map((m) => (m.id === tempId ? { ...m, status: 'failed' } : m))
+      );
+      const serverMsg = err?.response?.data?.error;
       Toast.show({
         type: 'error',
-        text1: 'Message Failed',
-        text2: 'Could not send message. Please try again.',
+        text1: 'Message not sent',
+        text2: serverMsg || 'Check your connection and tap the message to retry.',
       });
-    } finally {
-      setSending(false);
     }
+  };
+
+  const handleSendMessage = async () => {
+    if (!inputText.trim()) return;
+    const textToSend = inputText.trim();
+    const replyTo = replyTarget
+      ? { senderName: replyTarget.senderName, body: replyTarget.body }
+      : undefined;
+
+    setInputText('');
+    setReplyTarget(null);
+    mobileSocket.emit('stop-typing', {
+      communityId,
+      isPrivate: true,
+      senderId: user?.id,
+      recipientId,
+    });
+
+    await sendOptimisticPrivateMessage(textToSend, replyTo);
   };
 
   const handleToggleLike = async (messageId: string) => {
@@ -465,10 +533,23 @@ export default function PrivateChatScreen() {
 
           <View style={styles.msgFooterRow}>
             {isSelf ? (
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 3 }}>
-                <CheckIcon size={11} color={figmaColors.inkMuted} strokeWidth={1.3} />
-                <Text style={styles.readReceiptText}>Read</Text>
-              </View>
+              item.status === 'failed' ? (
+                <TouchableOpacity
+                  onPress={() => sendOptimisticPrivateMessage(item.body, item.replyTo, item.id)}
+                  activeOpacity={0.7}
+                >
+                  <Text style={[styles.readReceiptText, { color: '#DC2626', fontWeight: '700' }]}>
+                    Failed · Tap to retry
+                  </Text>
+                </TouchableOpacity>
+              ) : (
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 3 }}>
+                  <CheckIcon size={11} color={figmaColors.inkMuted} strokeWidth={1.3} />
+                  <Text style={styles.readReceiptText}>
+                    {item.status === 'sending' ? 'Sending...' : 'Delivered'}
+                  </Text>
+                </View>
+              )
             ) : null}
 
             <TouchableOpacity
@@ -779,7 +860,7 @@ export default function PrivateChatScreen() {
               !inputText.trim() && styles.sendButtonDisabled,
             ]}
             onPress={handleSendMessage}
-            disabled={!inputText.trim() || sending}
+            disabled={!inputText.trim()}
             activeOpacity={0.75}
           >
             <SendIcon
