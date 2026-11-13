@@ -19,6 +19,8 @@ import { mobileSocket } from '../api/socket';
 import { Community, UserProfile } from '../types';
 import { useAuth } from '../context/AuthContext';
 import BottomNav from '../components/BottomNav';
+import { VerifiedBadge, LockIcon, CloseIcon } from '../components/FigmaIcons';
+import { figmaColors } from '../theme/figmaTheme';
 
 const AVATAR_COLORS = [
   '#059669',
@@ -258,9 +260,7 @@ export default function ProfileScreen() {
 
               <View style={styles.nameVerifiedRow}>
                 <Text style={styles.nameText}>{displayName}</Text>
-                <View style={styles.verifiedDot}>
-                  <Text style={styles.verifiedDotText}>✓</Text>
-                </View>
+                <VerifiedBadge size={16} />
               </View>
 
               <Text style={styles.emailText}>{displayEmail}</Text>
@@ -317,7 +317,10 @@ export default function ProfileScreen() {
 
             {/* About Side-Chats Card */}
             <View style={styles.aboutCard}>
-              <Text style={styles.aboutTitle}>🔒 About Scoped Side-Chats</Text>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 6 }}>
+                <LockIcon size={14} color={figmaColors.inkOlive} />
+                <Text style={styles.aboutTitle}>About Scoped Side-Chats</Text>
+              </View>
               <Text style={styles.aboutBody}>
                 In <Text style={{ fontWeight: '800', color: '#10B981' }}>common</Text>, all 1-to-1 chats are connected to the communities you share with each person. No generic direct message chaos.
               </Text>

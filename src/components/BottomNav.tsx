@@ -6,8 +6,15 @@ import {
   StyleSheet,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import Svg, { Path, Circle } from 'react-native-svg';
 import CreateCommunityModal from './CreateCommunityModal';
+import {
+  HomeIcon,
+  CompassIcon,
+  PlusIcon,
+  BellIcon,
+  UserIcon,
+} from './FigmaIcons';
+import { figmaColors, figmaShadows } from '../theme/figmaTheme';
 
 export type BottomTabKey = 'Home' | 'Discover' | 'Activity' | 'Profile';
 
@@ -27,7 +34,7 @@ export default function BottomNav({
   unreadCount = 0,
 }: BottomNavProps) {
   const insets = useSafeAreaInsets();
-  const bottomPad = Math.max(insets.bottom, 10);
+  const bottomPad = Math.max(insets.bottom, 12);
   const [showCreate, setShowCreate] = useState(false);
 
   const handleCreate = () => {
@@ -46,150 +53,119 @@ export default function BottomNav({
 
   return (
     <>
-    <View style={[styles.bottomNav, { paddingBottom: bottomPad }]}>
-      {/* 1. My Space */}
-      <TouchableOpacity
-        style={styles.navItem}
-        onPress={() => go('Home')}
-        activeOpacity={0.7}
-      >
-        <Svg width={20} height={20} viewBox="0 0 24 24" fill="none">
-          <Path
-            d="M3 9.5L12 3l9 6.5V20a1 1 0 0 1-1 1h-5.5v-6h-5v6H4a1 1 0 0 1-1-1V9.5z"
-            stroke={activeTab === 'Home' ? '#111827' : '#9CA3AF'}
-            strokeWidth={activeTab === 'Home' ? 2.1 : 1.7}
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          />
-        </Svg>
-        <Text
-          style={[
-            styles.navLabel,
-            activeTab === 'Home' && styles.navLabelActive,
-          ]}
+      <View style={[styles.bottomNav, { paddingBottom: bottomPad }]}>
+        {/* 1. My Space */}
+        <TouchableOpacity
+          style={styles.navItem}
+          onPress={() => go('Home')}
+          activeOpacity={0.7}
         >
-          My Space
-        </Text>
-      </TouchableOpacity>
+          <HomeIcon
+            size={21}
+            color={activeTab === 'Home' ? figmaColors.ink : figmaColors.inkInactive}
+            strokeWidth={activeTab === 'Home' ? 1.85 : 1.55}
+          />
+          <Text
+            style={[
+              styles.navLabel,
+              activeTab === 'Home' && styles.navLabelActive,
+            ]}
+          >
+            My Space
+          </Text>
+        </TouchableOpacity>
 
-      {/* 2. Discover */}
-      <TouchableOpacity
-        style={styles.navItem}
-        onPress={() => go('Discover')}
-        activeOpacity={0.7}
-      >
-        <Svg width={20} height={20} viewBox="0 0 24 24" fill="none">
-          <Circle
-            cx={12}
-            cy={12}
-            r={9}
-            stroke={activeTab === 'Discover' ? '#111827' : '#9CA3AF'}
-            strokeWidth={activeTab === 'Discover' ? 2.1 : 1.7}
-          />
-          <Path
-            d="M15.5 8.5l-2 5-5 2 2-5 5-2z"
-            stroke={activeTab === 'Discover' ? '#111827' : '#9CA3AF'}
-            strokeWidth={activeTab === 'Discover' ? 2.1 : 1.7}
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          />
-        </Svg>
-        <Text
-          style={[
-            styles.navLabel,
-            activeTab === 'Discover' && styles.navLabelActive,
-          ]}
+        {/* 2. Discover */}
+        <TouchableOpacity
+          style={styles.navItem}
+          onPress={() => go('Discover')}
+          activeOpacity={0.7}
         >
-          Discover
-        </Text>
-      </TouchableOpacity>
+          <CompassIcon
+            size={21}
+            color={
+              activeTab === 'Discover' ? figmaColors.ink : figmaColors.inkInactive
+            }
+            strokeWidth={activeTab === 'Discover' ? 1.85 : 1.55}
+          />
+          <Text
+            style={[
+              styles.navLabel,
+              activeTab === 'Discover' && styles.navLabelActive,
+            ]}
+          >
+            Discover
+          </Text>
+        </TouchableOpacity>
 
-      {/* 3. Create (Center Black Circle) */}
-      <TouchableOpacity
-        style={styles.navCenterItem}
-        onPress={handleCreate}
-        activeOpacity={0.85}
-      >
-        <View style={styles.navCreateCircle}>
-          <Svg width={18} height={18} viewBox="0 0 24 24" fill="none">
-            <Path
-              d="M12 5v14M5 12h14"
-              stroke="#CEF26D"
-              strokeWidth={2.4}
-              strokeLinecap="round"
+        {/* 3. Create (Center Dark Circle with Lime Plus) */}
+        <TouchableOpacity
+          style={styles.navCenterItem}
+          onPress={handleCreate}
+          activeOpacity={0.85}
+        >
+          <View style={styles.navCreateCircle}>
+            <PlusIcon size={22} color={figmaColors.brandLime} strokeWidth={1.85} />
+          </View>
+          <Text style={styles.navLabel}>Create</Text>
+        </TouchableOpacity>
+
+        {/* 4. Activity */}
+        <TouchableOpacity
+          style={styles.navItem}
+          onPress={() => go('Activity')}
+          activeOpacity={0.7}
+        >
+          <View style={styles.iconWrap}>
+            <BellIcon
+              size={21}
+              color={
+                activeTab === 'Activity' ? figmaColors.ink : figmaColors.inkInactive
+              }
+              strokeWidth={activeTab === 'Activity' ? 1.85 : 1.55}
             />
-          </Svg>
-        </View>
-        <Text style={styles.navLabel}>Create</Text>
-      </TouchableOpacity>
+            {unreadCount > 0 ? <View style={styles.navBadgeDot} /> : null}
+          </View>
+          <Text
+            style={[
+              styles.navLabel,
+              activeTab === 'Activity' && styles.navLabelActive,
+            ]}
+          >
+            Activity
+          </Text>
+        </TouchableOpacity>
 
-      {/* 4. Activity */}
-      <TouchableOpacity
-        style={styles.navItem}
-        onPress={() => go('Activity')}
-        activeOpacity={0.7}
-      >
-        <View style={styles.iconWrap}>
-          <Svg width={20} height={20} viewBox="0 0 24 24" fill="none">
-            <Path
-              d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9M13.73 21a2 2 0 0 1-3.46 0"
-              stroke={activeTab === 'Activity' ? '#111827' : '#9CA3AF'}
-              strokeWidth={activeTab === 'Activity' ? 2.1 : 1.7}
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
-          </Svg>
-          {unreadCount > 0 ? <View style={styles.navBadgeDot} /> : null}
-        </View>
-        <Text
-          style={[
-            styles.navLabel,
-            activeTab === 'Activity' && styles.navLabelActive,
-          ]}
+        {/* 5. Me */}
+        <TouchableOpacity
+          style={styles.navItem}
+          onPress={() => go('Profile')}
+          activeOpacity={0.7}
         >
-          Activity
-        </Text>
-      </TouchableOpacity>
-
-      {/* 5. Me */}
-      <TouchableOpacity
-        style={styles.navItem}
-        onPress={() => go('Profile')}
-        activeOpacity={0.7}
-      >
-        <Svg width={20} height={20} viewBox="0 0 24 24" fill="none">
-          <Path
-            d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"
-            stroke={activeTab === 'Profile' ? '#111827' : '#9CA3AF'}
-            strokeWidth={activeTab === 'Profile' ? 2.1 : 1.7}
-            strokeLinecap="round"
-            strokeLinejoin="round"
+          <UserIcon
+            size={21}
+            color={
+              activeTab === 'Profile' ? figmaColors.ink : figmaColors.inkInactive
+            }
+            strokeWidth={activeTab === 'Profile' ? 1.85 : 1.55}
           />
-          <Circle
-            cx={12}
-            cy={7}
-            r={4}
-            stroke={activeTab === 'Profile' ? '#111827' : '#9CA3AF'}
-            strokeWidth={activeTab === 'Profile' ? 2.1 : 1.7}
-          />
-        </Svg>
-        <Text
-          style={[
-            styles.navLabel,
-            activeTab === 'Profile' && styles.navLabelActive,
-          ]}
-        >
-          Me
-        </Text>
-      </TouchableOpacity>
-    </View>
+          <Text
+            style={[
+              styles.navLabel,
+              activeTab === 'Profile' && styles.navLabelActive,
+            ]}
+          >
+            Me
+          </Text>
+        </TouchableOpacity>
+      </View>
 
-    <CreateCommunityModal
-      visible={showCreate}
-      onClose={() => setShowCreate(false)}
-      navigation={navigation}
-      onCreated={onCommunityCreated}
-    />
+      <CreateCommunityModal
+        visible={showCreate}
+        onClose={() => setShowCreate(false)}
+        navigation={navigation}
+        onCreated={onCommunityCreated}
+      />
     </>
   );
 }
@@ -199,10 +175,10 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'flex-end',
     justifyContent: 'space-around',
-    backgroundColor: '#FFFFFF',
+    backgroundColor: figmaColors.bg,
     borderTopWidth: 1,
-    borderTopColor: '#EAECF0',
-    paddingTop: 8,
+    borderTopColor: figmaColors.borderHairline,
+    paddingTop: 10,
     paddingHorizontal: 8,
   },
   navItem: {
@@ -210,27 +186,23 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     flex: 1,
     paddingVertical: 2,
-    gap: 3,
+    gap: 4,
   },
   navCenterItem: {
     alignItems: 'center',
     justifyContent: 'center',
     flex: 1,
-    marginTop: -16,
-    gap: 3,
+    marginTop: -18,
+    gap: 4,
   },
   navCreateCircle: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: '#111827',
+    width: 42,
+    height: 42,
+    borderRadius: 21,
+    backgroundColor: figmaColors.ink,
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.18,
-    shadowRadius: 6,
-    elevation: 4,
+    ...figmaShadows.floating,
   },
   iconWrap: {
     position: 'relative',
@@ -238,21 +210,21 @@ const styles = StyleSheet.create({
   navBadgeDot: {
     position: 'absolute',
     top: -1,
-    right: -3,
+    right: -2,
     width: 8,
     height: 8,
     borderRadius: 4,
-    backgroundColor: '#EF4444',
+    backgroundColor: figmaColors.onlineGreen,
     borderWidth: 1.5,
-    borderColor: '#FFFFFF',
+    borderColor: figmaColors.bg,
   },
   navLabel: {
-    fontSize: 10,
+    fontSize: 11,
     fontWeight: '600',
-    color: '#9CA3AF',
+    color: figmaColors.inkInactive,
   },
   navLabelActive: {
     fontWeight: '800',
-    color: '#111827',
+    color: figmaColors.ink,
   },
 });

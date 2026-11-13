@@ -21,6 +21,22 @@ import { mobileApi } from '../api/client';
 import { mobileSocket } from '../api/socket';
 import { Community, ChatMessage } from '../types';
 import { useAuth } from '../context/AuthContext';
+import {
+  ChevronLeftIcon,
+  InfoIcon,
+  SearchIcon,
+  CloseIcon,
+  PinIcon,
+  UsersIcon,
+  LockIcon,
+  CalendarIcon,
+  CheckIcon,
+  ReplyIcon,
+  ChatBubbleIcon,
+  PlusIcon,
+  SendIcon,
+} from '../components/FigmaIcons';
+import { figmaColors, figmaShadows } from '../theme/figmaTheme';
 
 export default function CommunityChatScreen() {
   const route = useRoute<any>();
@@ -464,7 +480,7 @@ export default function CommunityChatScreen() {
         <View style={styles.privateSection}>
           <View style={styles.privateSectionHeader}>
             <View style={styles.privateSectionTitleRow}>
-              <Text style={{ fontSize: 12 }}>🔒</Text>
+              <LockIcon size={13} color={figmaColors.inkSecondary} />
               <Text style={styles.privateSectionTitle}>
                 Private chats in this community
               </Text>
@@ -626,7 +642,7 @@ export default function CommunityChatScreen() {
         {community.event ? (
           <View style={styles.eventBanner}>
             <View style={styles.eventIconBox}>
-              <Text style={{ fontSize: 18 }}>📅</Text>
+              <CalendarIcon size={19} color="#26331C" />
             </View>
             <View style={styles.eventDetails}>
               <Text style={styles.eventTag}>{community.event.tag}</Text>
@@ -638,27 +654,32 @@ export default function CommunityChatScreen() {
             </View>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
               <TouchableOpacity
-                style={[styles.rsvpBtn, { backgroundColor: '#F1F5F9', borderWidth: 1, borderColor: '#CBD5E1' }]}
+                style={[styles.rsvpBtn, { backgroundColor: figmaColors.surfacePill, borderWidth: 1, borderColor: figmaColors.border, flexDirection: 'row', alignItems: 'center', gap: 4 }]}
                 onPress={handleAddToCalendar}
                 activeOpacity={0.75}
               >
-                <Text style={[styles.rsvpBtnText, { color: '#0F172A' }]}>📅 Sync</Text>
+                <CalendarIcon size={13} color={figmaColors.ink} />
+                <Text style={[styles.rsvpBtnText, { color: figmaColors.ink }]}>Sync</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={[
                   styles.rsvpBtn,
                   community.event.isJoined ? styles.rsvpBtnActive : null,
+                  { flexDirection: 'row', alignItems: 'center', gap: 4 },
                 ]}
                 onPress={handleToggleRsvp}
                 activeOpacity={0.75}
               >
+                {community.event.isJoined ? (
+                  <CheckIcon size={11} color="#FFFFFF" strokeWidth={1.6} />
+                ) : null}
                 <Text
                   style={[
                     styles.rsvpBtnText,
                     community.event.isJoined ? styles.rsvpBtnTextActive : null,
                   ]}
                 >
-                  {community.event.isJoined ? 'Joined ✓' : 'Join'}
+                  {community.event.isJoined ? 'Joined' : 'Join'}
                 </Text>
               </TouchableOpacity>
             </View>
@@ -871,19 +892,21 @@ export default function CommunityChatScreen() {
 
             <TouchableOpacity
               onPress={() => setReplyTarget(item)}
-              style={styles.actionBtn}
+              style={[styles.actionBtn, { flexDirection: 'row', alignItems: 'center', gap: 4 }]}
               activeOpacity={0.6}
             >
-              <Text style={styles.actionBtnText}>↩ Reply</Text>
+              <ReplyIcon size={12} color={figmaColors.inkMuted} />
+              <Text style={styles.actionBtnText}>Reply</Text>
             </TouchableOpacity>
 
             <TouchableOpacity
               onPress={() => setCommentingMessage(item)}
-              style={styles.actionBtn}
+              style={[styles.actionBtn, { flexDirection: 'row', alignItems: 'center', gap: 4 }]}
               activeOpacity={0.6}
             >
+              <ChatBubbleIcon size={12} color={figmaColors.inkMuted} />
               <Text style={styles.actionBtnText}>
-                💬 {item.commentCount || item.comments?.length || 0}
+                {item.commentCount || item.comments?.length || 0}
               </Text>
             </TouchableOpacity>
 
@@ -921,7 +944,7 @@ export default function CommunityChatScreen() {
           style={styles.backButton}
           activeOpacity={0.7}
         >
-          <Text style={styles.backButtonText}>← Back</Text>
+          <ChevronLeftIcon size={20} color={figmaColors.ink} />
         </TouchableOpacity>
 
         <TouchableOpacity
@@ -942,7 +965,7 @@ export default function CommunityChatScreen() {
             <View style={styles.headerStatsRow}>
               <View style={styles.headerOnlineDot} />
               <Text style={styles.headerSubtitle}>
-                {community?.onlineCount || 1} online •{' '}
+                {community?.onlineCount || 1} online ·{' '}
                 {community?.memberCount || '1.2k'} members
               </Text>
             </View>
@@ -958,7 +981,7 @@ export default function CommunityChatScreen() {
             }}
             activeOpacity={0.7}
           >
-            <Text style={{ fontSize: 16 }}>🔍</Text>
+            <SearchIcon size={17} color={figmaColors.ink} />
           </TouchableOpacity>
 
           <TouchableOpacity
@@ -966,7 +989,7 @@ export default function CommunityChatScreen() {
             onPress={() => setShowInfoModal(true)}
             activeOpacity={0.7}
           >
-            <Text style={styles.infoIconText}>ⓘ</Text>
+            <InfoIcon size={19} color={figmaColors.ink} />
           </TouchableOpacity>
         </View>
       </View>
@@ -977,15 +1000,15 @@ export default function CommunityChatScreen() {
           style={{
             flexDirection: 'row',
             alignItems: 'center',
-            backgroundColor: '#F8FAFC',
+            backgroundColor: figmaColors.surfaceSoft,
             borderBottomWidth: 1,
-            borderBottomColor: '#E2E8F0',
+            borderBottomColor: figmaColors.border,
             paddingHorizontal: 16,
             paddingVertical: 8,
             gap: 8,
           }}
         >
-          <Text style={{ fontSize: 14 }}>🔍</Text>
+          <SearchIcon size={16} color={figmaColors.inkMuted} />
           <TextInput
             style={{
               flex: 1,
@@ -1019,10 +1042,16 @@ export default function CommunityChatScreen() {
       {/* Sub-bar (Location & View Group) */}
       <View style={styles.subHeaderBar}>
         <View style={styles.subHeaderLeft}>
-          <Text style={styles.subHeaderMeta}>
-            📍 {community?.location || 'Global'}
-          </Text>
-          <Text style={styles.subHeaderMeta}>👥 Open hangout</Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+            <PinIcon size={12} color={figmaColors.inkMuted} />
+            <Text style={styles.subHeaderMeta}>
+              {community?.location || 'Global'}
+            </Text>
+          </View>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+            <UsersIcon size={12} color={figmaColors.inkMuted} />
+            <Text style={styles.subHeaderMeta}>Open hangout</Text>
+          </View>
         </View>
         <TouchableOpacity onPress={() => setShowInfoModal(true)}>
           <Text style={styles.subHeaderLink}>View group</Text>
@@ -1164,13 +1193,17 @@ export default function CommunityChatScreen() {
             onPress={() => setShowPlusMenu(!showPlusMenu)}
             activeOpacity={0.75}
           >
-            <Text style={styles.plusBtnText}>{showPlusMenu ? '✕' : '＋'}</Text>
+            {showPlusMenu ? (
+              <CloseIcon size={17} color={figmaColors.ink} />
+            ) : (
+              <PlusIcon size={18} color={figmaColors.ink} strokeWidth={1.75} />
+            )}
           </TouchableOpacity>
 
           <TextInput
             style={styles.textInput}
             placeholder="Message the community..."
-            placeholderTextColor="#94A3B8"
+            placeholderTextColor={figmaColors.inkInactive}
             value={inputText}
             onChangeText={handleTextChange}
             multiline
@@ -1185,7 +1218,10 @@ export default function CommunityChatScreen() {
             disabled={!inputText.trim() || sending}
             activeOpacity={0.75}
           >
-            <Text style={styles.sendButtonText}>Send</Text>
+            <SendIcon
+              size={16}
+              color={!inputText.trim() ? figmaColors.inkInactive : '#FFFFFF'}
+            />
           </TouchableOpacity>
         </View>
       </KeyboardAvoidingView>
@@ -1592,7 +1628,7 @@ export default function CommunityChatScreen() {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: '#F8F9FA',
+    backgroundColor: figmaColors.bg,
   },
   topHeader: {
     flexDirection: 'row',
@@ -1600,13 +1636,16 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: 14,
     paddingVertical: 10,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: figmaColors.bg,
     borderBottomWidth: 1,
-    borderBottomColor: '#EAECF0',
+    borderBottomColor: figmaColors.borderHairline,
   },
   backButton: {
-    paddingVertical: 6,
-    paddingRight: 10,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   backButtonText: {
     color: '#111827',
@@ -2142,45 +2181,45 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 12,
     paddingVertical: 10,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: figmaColors.bg,
     borderTopWidth: 1,
-    borderTopColor: '#EAECF0',
+    borderTopColor: figmaColors.borderHairline,
     gap: 8,
   },
   plusBtn: {
-    width: 34,
-    height: 34,
-    borderRadius: 17,
-    backgroundColor: '#F3F4F6',
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: figmaColors.surfacePill,
     borderWidth: 1,
-    borderColor: '#E5E7EB',
+    borderColor: figmaColors.border,
     alignItems: 'center',
     justifyContent: 'center',
   },
   plusBtnText: {
-    color: '#111827',
+    color: figmaColors.ink,
     fontSize: 18,
     fontWeight: '800',
   },
   textInput: {
     flex: 1,
-    backgroundColor: '#F8F9FA',
+    backgroundColor: figmaColors.surfaceSoft,
     borderRadius: 20,
     paddingHorizontal: 14,
     paddingVertical: 9,
-    color: '#111827',
+    color: figmaColors.ink,
     fontSize: 14,
     maxHeight: 100,
     borderWidth: 1,
-    borderColor: '#E5E7EB',
+    borderColor: figmaColors.border,
   },
   sendButton: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: '#0F172A',
-    justifyContent: 'center',
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    backgroundColor: figmaColors.inkButton,
     alignItems: 'center',
+    justifyContent: 'center',
   },
   sendButtonDisabled: {
     opacity: 0.45,

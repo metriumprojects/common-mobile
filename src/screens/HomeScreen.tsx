@@ -20,6 +20,17 @@ import { mobileSocket } from '../api/socket';
 import { Community, UserProfile } from '../types';
 import { useAuth } from '../context/AuthContext';
 import BottomNav from '../components/BottomNav';
+import BrandHeader from '../components/BrandHeader';
+import {
+  VerifiedBadge,
+  UsersIcon,
+  PinIcon,
+  ChatBubbleIcon,
+  LockIcon,
+  SearchIcon,
+  CloseIcon,
+} from '../components/FigmaIcons';
+import { figmaColors, figmaShadows } from '../theme/figmaTheme';
 
 export default function HomeScreen() {
   const navigation = useNavigation<any>();
@@ -239,11 +250,7 @@ export default function HomeScreen() {
               <Text style={styles.communityName} numberOfLines={1}>
                 {item.name}
               </Text>
-              {item.verified ? (
-                <View style={styles.verifiedCheck}>
-                  <Text style={styles.verifiedCheckText}>✓</Text>
-                </View>
-              ) : null}
+              {item.verified ? <VerifiedBadge size={16} /> : null}
             </View>
 
             <Text style={styles.communityDesc} numberOfLines={1}>
@@ -251,12 +258,18 @@ export default function HomeScreen() {
             </Text>
 
             <View style={styles.metaStatsRow}>
-              <Text style={styles.metaStatText}>
-                👥 {item.memberCount || '1.2k'} members
-              </Text>
-              <Text style={styles.metaStatText} numberOfLines={1}>
-                📍 {item.location || 'Global'}
-              </Text>
+              <View style={styles.metaStatItem}>
+                <UsersIcon size={13} color={figmaColors.inkSecondary} />
+                <Text style={styles.metaStatText}>
+                  {item.memberCount || '1.2k'} members
+                </Text>
+              </View>
+              <View style={styles.metaStatItem}>
+                <PinIcon size={13} color={figmaColors.inkSecondary} />
+                <Text style={styles.metaStatText} numberOfLines={1}>
+                  {item.location || 'Global'}
+                </Text>
+              </View>
             </View>
           </View>
 
@@ -267,7 +280,8 @@ export default function HomeScreen() {
             }
             activeOpacity={0.8}
           >
-            <Text style={styles.messageActionBtnText}>💬 Message</Text>
+            <ChatBubbleIcon size={14} color="#FFFFFF" />
+            <Text style={styles.messageActionBtnText}>Message</Text>
           </TouchableOpacity>
         </TouchableOpacity>
 
@@ -330,9 +344,12 @@ export default function HomeScreen() {
 
             <View style={styles.channelContent}>
               <View style={styles.channelTitleRow}>
-                <Text style={styles.privateInLabel}>
-                  🔒 Private in {item.name}
-                </Text>
+                <View style={styles.privateInLabelRow}>
+                  <LockIcon size={12} color={figmaColors.inkSecondary} />
+                  <Text style={styles.privateInLabel} numberOfLines={1}>
+                    Private in {item.name}
+                  </Text>
+                </View>
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
                   <Text style={styles.channelTime}>
                     {latestPrivateChat?.lastMessageTime || '1m'}
@@ -362,40 +379,10 @@ export default function HomeScreen() {
   return (
     <SafeAreaView edges={['top']} style={styles.safeArea}>
       {/* Top Bar */}
-      <View style={styles.topBar}>
-        <View style={styles.brandRow}>
-          <Text style={styles.brandText}>common</Text>
-          <View style={styles.brandDot} />
-        </View>
-
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
-          <TouchableOpacity
-            style={styles.createHeaderBtn}
-            onPress={() => setShowCreateModal(true)}
-            activeOpacity={0.8}
-          >
-            <Text style={styles.createHeaderBtnText}>+ Create</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={styles.avatarButton}
-            onPress={() => navigation.navigate('Profile')}
-            activeOpacity={0.7}
-          >
-            <View
-              style={[
-                styles.userAvatar,
-                { backgroundColor: currentUser?.avatarColor || '#059669' },
-              ]}
-            >
-              <Text style={styles.userAvatarText}>
-                {currentUser?.initials || user?.name?.[0]?.toUpperCase() || 'U'}
-              </Text>
-            </View>
-            <View style={styles.avatarOnlineBadge} />
-          </TouchableOpacity>
-        </View>
-      </View>
+      <BrandHeader
+        initials={currentUser?.initials || user?.name?.[0]?.toUpperCase() || 'U'}
+        onPressAvatar={() => navigation.navigate('Profile')}
+      />
 
       {/* Screen Title & Discover Action */}
       <View style={styles.pageHeader}>
@@ -412,24 +399,24 @@ export default function HomeScreen() {
             onPress={() => navigation.navigate('Discover')}
             activeOpacity={0.8}
           >
-            <Text style={styles.discoverMoreBtnText}>🧭 Discover more</Text>
+            <Text style={styles.discoverMoreBtnText}>Discover more</Text>
           </TouchableOpacity>
         </View>
 
         {/* Search My Space */}
         {joinedCommunities.length > 0 ? (
           <View style={styles.searchBar}>
-            <Text style={styles.searchIcon}>🔍</Text>
+            <SearchIcon size={17} color={figmaColors.inkMuted} />
             <TextInput
               style={styles.searchInput}
               placeholder="Filter your communities..."
-              placeholderTextColor="#64748B"
+              placeholderTextColor={figmaColors.inkInactive}
               value={searchQuery}
               onChangeText={setSearchQuery}
             />
             {searchQuery.length > 0 ? (
               <TouchableOpacity onPress={() => setSearchQuery('')}>
-                <Text style={styles.clearSearchText}>✕</Text>
+                <CloseIcon size={16} color={figmaColors.inkMuted} />
               </TouchableOpacity>
             ) : null}
           </View>
@@ -439,7 +426,7 @@ export default function HomeScreen() {
       {/* Content List */}
       {loading ? (
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#10B981" />
+          <ActivityIndicator size="large" color={figmaColors.ink} />
         </View>
       ) : (
         <FlatList
@@ -451,13 +438,13 @@ export default function HomeScreen() {
             <RefreshControl
               refreshing={refreshing}
               onRefresh={onRefresh}
-              tintColor="#10B981"
+              tintColor={figmaColors.ink}
             />
           }
           ListEmptyComponent={
             <View style={styles.emptyContainer}>
               <View style={styles.emptyIconCircle}>
-                <Text style={{ fontSize: 28 }}>💬</Text>
+                <ChatBubbleIcon size={26} color={figmaColors.ink} />
               </View>
               <Text style={styles.emptyTitle}>
                 {searchQuery ? 'No matching communities' : 'No communities yet'}
@@ -609,68 +596,13 @@ export default function HomeScreen() {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: '#F8F9FA',
-  },
-  topBar: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingVertical: 12,
-    backgroundColor: '#FFFFFF',
-    borderBottomWidth: 1,
-    borderBottomColor: '#EAECF0',
-  },
-  brandRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 3,
-  },
-  brandText: {
-    fontSize: 22,
-    fontWeight: '900',
-    color: '#111827',
-    letterSpacing: -0.6,
-  },
-  brandDot: {
-    width: 7,
-    height: 7,
-    borderRadius: 4,
-    backgroundColor: '#22C55E',
-    marginTop: 4,
-  },
-  avatarButton: {
-    position: 'relative',
-    padding: 2,
-  },
-  userAvatar: {
-    width: 34,
-    height: 34,
-    borderRadius: 17,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: '#111827',
-  },
-  userAvatarText: {
-    color: '#FFFFFF',
-    fontSize: 13,
-    fontWeight: '800',
-  },
-  avatarOnlineBadge: {
-    position: 'absolute',
-    bottom: 1,
-    right: 1,
-    width: 10,
-    height: 10,
-    borderRadius: 5,
-    backgroundColor: '#22C55E',
-    borderWidth: 2,
-    borderColor: '#FFFFFF',
+    backgroundColor: figmaColors.bg,
   },
   pageHeader: {
     paddingHorizontal: 18,
-    paddingTop: 14,
-    paddingBottom: 10,
+    paddingTop: 6,
+    paddingBottom: 12,
+    backgroundColor: figmaColors.bg,
   },
   pageHeaderTopRow: {
     flexDirection: 'row',
@@ -678,86 +610,78 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   pageTitle: {
-    fontSize: 14,
+    fontSize: 11,
     fontWeight: '800',
-    color: '#6B7280',
-    letterSpacing: 0.5,
+    color: figmaColors.inkMuted,
+    letterSpacing: 1.2,
     textTransform: 'uppercase',
   },
   pageSubtitle: {
     fontSize: 13,
-    color: '#111827',
-    fontWeight: '700',
+    color: figmaColors.inkSecondary,
+    fontWeight: '600',
     marginTop: 2,
   },
   discoverMoreBtn: {
-    backgroundColor: '#EBF8EE',
+    backgroundColor: figmaColors.sageSoft,
     paddingHorizontal: 14,
     paddingVertical: 8,
     borderRadius: 20,
+    borderWidth: 1,
+    borderColor: figmaColors.borderHairline,
   },
   discoverMoreBtnText: {
-    color: '#111827',
+    color: figmaColors.inkButton,
     fontSize: 12,
     fontWeight: '700',
   },
   searchBar: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#FFFFFF',
-    borderRadius: 12,
+    backgroundColor: figmaColors.surfaceSoft,
+    borderRadius: 14,
     paddingHorizontal: 12,
     paddingVertical: 8,
-    marginTop: 10,
+    marginTop: 12,
     borderWidth: 1,
-    borderColor: '#EAECF0',
-  },
-  searchIcon: {
-    fontSize: 13,
-    marginRight: 8,
+    borderColor: figmaColors.border,
+    gap: 8,
   },
   searchInput: {
     flex: 1,
-    color: '#111827',
-    fontSize: 13,
+    color: figmaColors.ink,
+    fontSize: 14,
     paddingVertical: 2,
-  },
-  clearSearchText: {
-    color: '#9CA3AF',
-    fontSize: 13,
-    paddingHorizontal: 4,
   },
   listContent: {
     paddingHorizontal: 16,
+    paddingTop: 4,
     paddingBottom: 24,
-    gap: 16,
+    gap: 14,
   },
   communityCard: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 22,
+    backgroundColor: figmaColors.bg,
+    borderRadius: 20,
     borderWidth: 1,
-    borderColor: '#EAECF0',
+    borderColor: figmaColors.border,
     overflow: 'hidden',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.04,
-    shadowRadius: 8,
-    elevation: 2,
+    ...figmaShadows.card,
   },
   cardHeader: {
     flexDirection: 'row',
     alignItems: 'flex-start',
     padding: 14,
     borderBottomWidth: 1,
-    borderBottomColor: '#F3F4F6',
+    borderBottomColor: figmaColors.borderHairline,
     gap: 12,
   },
   avatarBox: {
     position: 'relative',
-    width: 68,
-    height: 68,
-    borderRadius: 14,
+    width: 58,
+    height: 58,
+    borderRadius: 16,
     overflow: 'hidden',
+    backgroundColor: figmaColors.surfaceMuted,
   },
   communityAvatar: {
     width: '100%',
@@ -766,14 +690,16 @@ const styles = StyleSheet.create({
   onlineCountBadge: {
     position: 'absolute',
     bottom: 4,
-    left: 4,
-    backgroundColor: '#C6F158',
+    right: 4,
+    backgroundColor: figmaColors.onlineBright,
     paddingHorizontal: 6,
     paddingVertical: 2,
     borderRadius: 10,
+    borderWidth: 1.5,
+    borderColor: figmaColors.bg,
   },
   onlineCountBadgeText: {
-    color: '#111827',
+    color: figmaColors.ink,
     fontSize: 10,
     fontWeight: '800',
   },
@@ -787,25 +713,26 @@ const styles = StyleSheet.create({
     marginBottom: 2,
   },
   categoryLabel: {
-    fontSize: 11,
+    fontSize: 10,
     fontWeight: '800',
-    color: '#6B7280',
-    letterSpacing: 0.5,
+    color: figmaColors.inkMuted,
+    letterSpacing: 0.8,
+    textTransform: 'uppercase',
   },
   metaDot: {
-    color: '#9CA3AF',
+    color: figmaColors.inkInactive,
     fontSize: 10,
   },
   greenOnlineDot: {
     width: 6,
     height: 6,
     borderRadius: 3,
-    backgroundColor: '#22C55E',
+    backgroundColor: figmaColors.onlineDot,
   },
   onlineLabel: {
     fontSize: 11,
     fontWeight: '700',
-    color: '#16A34A',
+    color: figmaColors.inkOlive,
   },
   titleRow: {
     flexDirection: 'row',
@@ -815,41 +742,38 @@ const styles = StyleSheet.create({
   },
   communityName: {
     fontSize: 16,
-    fontWeight: '800',
-    color: '#111827',
+    fontWeight: '700',
+    color: figmaColors.ink,
+    letterSpacing: -0.35,
     flexShrink: 1,
   },
-  verifiedCheck: {
-    width: 15,
-    height: 15,
-    borderRadius: 8,
-    backgroundColor: '#22C55E',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  verifiedCheckText: {
-    color: '#FFFFFF',
-    fontSize: 9,
-    fontWeight: '900',
-  },
   communityDesc: {
-    fontSize: 12,
-    color: '#6B7280',
+    fontSize: 13,
+    color: figmaColors.inkSecondary,
     marginBottom: 6,
   },
   metaStatsRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
+    gap: 12,
+  },
+  metaStatItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    flexShrink: 1,
   },
   metaStatText: {
     fontSize: 11,
-    color: '#9CA3AF',
+    color: figmaColors.inkMuted,
     fontWeight: '600',
   },
   messageActionBtn: {
-    backgroundColor: '#0F172A',
-    paddingHorizontal: 14,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    backgroundColor: figmaColors.inkButton,
+    paddingHorizontal: 13,
     paddingVertical: 8,
     borderRadius: 20,
     alignSelf: 'center',
@@ -857,17 +781,18 @@ const styles = StyleSheet.create({
   messageActionBtnText: {
     color: '#FFFFFF',
     fontSize: 12,
-    fontWeight: '800',
+    fontWeight: '700',
   },
   channelsContainer: {
-    paddingVertical: 8,
-    gap: 4,
+    backgroundColor: figmaColors.surfaceSoft,
+    paddingVertical: 6,
+    gap: 2,
   },
   channelRow: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 14,
-    paddingVertical: 8,
+    paddingVertical: 9,
   },
   avatarStack: {
     flexDirection: 'row',
@@ -886,7 +811,7 @@ const styles = StyleSheet.create({
   avatarStackText: {
     fontSize: 10,
     fontWeight: '800',
-    color: '#111827',
+    color: figmaColors.ink,
   },
   channelContent: {
     flex: 1,
@@ -900,41 +825,48 @@ const styles = StyleSheet.create({
   channelTagLabel: {
     fontSize: 10,
     fontWeight: '800',
-    color: '#9CA3AF',
-    letterSpacing: 0.5,
+    color: figmaColors.inkMuted,
+    letterSpacing: 0.7,
   },
   channelTime: {
     fontSize: 11,
-    color: '#9CA3AF',
-    fontWeight: '500',
+    color: figmaColors.inkInactive,
+    fontWeight: '600',
   },
   channelSnippet: {
-    fontSize: 12,
-    color: '#111827',
+    fontSize: 13,
+    color: figmaColors.inkSecondary,
     fontWeight: '500',
+  },
+  privateInLabelRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    flexShrink: 1,
   },
   privateInLabel: {
     fontSize: 11,
     fontWeight: '700',
-    color: '#6B7280',
+    color: figmaColors.inkSecondary,
   },
   blackBadgeCircle: {
-    width: 18,
-    height: 18,
-    borderRadius: 9,
-    backgroundColor: '#0F172A',
+    minWidth: 20,
+    height: 20,
+    paddingHorizontal: 5,
+    borderRadius: 10,
+    backgroundColor: figmaColors.ink,
     alignItems: 'center',
     justifyContent: 'center',
   },
   blackBadgeCircleText: {
-    color: '#FFFFFF',
+    color: figmaColors.brandLime,
     fontSize: 10,
     fontWeight: '800',
   },
   privateCountTitle: {
     fontSize: 13,
-    fontWeight: '800',
-    color: '#111827',
+    fontWeight: '700',
+    color: figmaColors.ink,
     marginBottom: 1,
   },
   loadingContainer: {

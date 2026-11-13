@@ -18,6 +18,13 @@ import { mobileApi } from '../api/client';
 import { mobileSocket } from '../api/socket';
 import { Community, PrivateSideChat } from '../types';
 import { useAuth } from '../context/AuthContext';
+import {
+  ChevronLeftIcon,
+  LockIcon,
+  SearchIcon,
+  CloseIcon,
+} from '../components/FigmaIcons';
+import { figmaColors } from '../theme/figmaTheme';
 
 export default function CommunityInboxScreen() {
   const route = useRoute<any>();
@@ -260,7 +267,7 @@ export default function CommunityInboxScreen() {
           style={styles.backBtn}
           activeOpacity={0.7}
         >
-          <Text style={styles.backBtnText}>← Back</Text>
+          <ChevronLeftIcon size={20} color={figmaColors.ink} />
         </TouchableOpacity>
 
         <View style={styles.headerCenter}>
@@ -270,12 +277,12 @@ export default function CommunityInboxScreen() {
           </Text>
         </View>
 
-        <View style={{ width: 48 }} />
+        <View style={{ width: 36 }} />
       </View>
 
       {loading ? (
         <View style={styles.loadingBox}>
-          <ActivityIndicator size="large" color="#10B981" />
+          <ActivityIndicator size="large" color={figmaColors.ink} />
         </View>
       ) : (
         <FlatList
@@ -301,8 +308,9 @@ export default function CommunityInboxScreen() {
                     {community?.name || 'Scoped Space'}
                   </Text>
                   <View style={styles.bannerLockRow}>
+                    <LockIcon size={12} color={figmaColors.inkSecondary} />
                     <Text style={styles.bannerLockText}>
-                      🔒 {sideChats.length} private chats • {totalUnread} unread
+                      {sideChats.length} private chats · {totalUnread} unread
                     </Text>
                   </View>
                 </View>
@@ -310,17 +318,17 @@ export default function CommunityInboxScreen() {
 
               {/* Search Bar */}
               <View style={styles.searchBox}>
-                <Text style={styles.searchIcon}>🔍</Text>
+                <SearchIcon size={17} color={figmaColors.inkMuted} />
                 <TextInput
                   style={styles.searchInput}
-                  placeholder="Search private chats by name or message..."
-                  placeholderTextColor="#64748B"
+                  placeholder="Search private chats"
+                  placeholderTextColor={figmaColors.inkInactive}
                   value={searchTerm}
                   onChangeText={setSearchTerm}
                 />
                 {searchTerm.length > 0 ? (
                   <TouchableOpacity onPress={() => setSearchTerm('')}>
-                    <Text style={styles.clearBtn}>✕</Text>
+                    <CloseIcon size={15} color={figmaColors.inkMuted} />
                   </TouchableOpacity>
                 ) : null}
               </View>
@@ -337,7 +345,9 @@ export default function CommunityInboxScreen() {
           }
           ListEmptyComponent={
             <View style={styles.emptyBox}>
-              <Text style={styles.emptyIcon}>🔒</Text>
+              <View style={{ marginBottom: 10 }}>
+                <LockIcon size={28} color={figmaColors.inkMuted} />
+              </View>
               <Text style={styles.emptyTitle}>
                 {searchTerm
                   ? `No chats matching "${searchTerm}"`
@@ -535,31 +545,34 @@ const styles = StyleSheet.create({
   inboxBanner: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 14,
-    backgroundColor: '#EAF8E8',
+    gap: 12,
+    backgroundColor: figmaColors.sageBanner,
     borderWidth: 1,
-    borderColor: '#D1F2D9',
+    borderColor: figmaColors.borderAccent,
     borderRadius: 16,
     padding: 14,
-    marginBottom: 16,
+    marginBottom: 14,
   },
   bannerImage: {
     width: 48,
     height: 48,
-    borderRadius: 24,
+    borderRadius: 14,
   },
   bannerTitle: {
-    fontSize: 14,
-    fontWeight: '800',
-    color: '#111827',
+    fontSize: 12,
+    fontWeight: '700',
+    color: figmaColors.inkSecondary,
   },
   bannerCommName: {
-    fontSize: 12,
-    color: '#047857',
+    fontSize: 15,
+    color: figmaColors.ink,
     fontWeight: '700',
   },
   bannerLockRow: {
-    marginTop: 4,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    marginTop: 3,
   },
   bannerLockText: {
     fontSize: 11,

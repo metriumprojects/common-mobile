@@ -4,7 +4,10 @@
   "expo": {
     "name": "Common Community",
     "slug": "common-community",
-    "platforms": ["ios", "android"],
+    "platforms": [
+      "ios",
+      "android"
+    ],
     "scheme": "common",
     "version": "1.0.0",
     "runtimeVersion": "1.0.0",
@@ -16,7 +19,7 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.common.community",
-      "buildNumber": "11"
+      "buildNumber": "12"
     },
     "android": {
       "package": "com.common.community",

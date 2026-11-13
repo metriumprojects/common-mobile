@@ -19,14 +19,26 @@ import { mobileSocket } from '../api/socket';
 import { Community } from '../types';
 import { useAuth } from '../context/AuthContext';
 import BottomNav from '../components/BottomNav';
+import BrandHeader from '../components/BrandHeader';
+import {
+  VerifiedBadge,
+  UsersIcon,
+  PinIcon,
+  ChatBubbleIcon,
+  LockIcon,
+  SearchIcon,
+  CloseIcon,
+  CompassIcon,
+} from '../components/FigmaIcons';
+import { figmaColors, figmaShadows } from '../theme/figmaTheme';
 
 const FILTER_PILLS = [
-  { id: 'trending', label: 'Trending', icon: null },
-  { id: 'around_me', label: 'Around me', icon: '🧭' },
-  { id: 'sport', label: 'Sport', icon: null },
-  { id: 'money', label: 'Money', icon: null },
-  { id: 'girls', label: 'Girls', icon: null },
-  { id: 'gaming', label: 'Gaming', icon: null },
+  { id: 'trending', label: 'Trending', hasCompass: false },
+  { id: 'around_me', label: 'Around me', hasCompass: true },
+  { id: 'sport', label: 'Sport', hasCompass: false },
+  { id: 'money', label: 'Money', hasCompass: false },
+  { id: 'girls', label: 'Girls', hasCompass: false },
+  { id: 'gaming', label: 'Gaming', hasCompass: false },
 ];
 
 export default function DiscoverScreen() {
@@ -148,23 +160,23 @@ export default function DiscoverScreen() {
       return {
         bg: '#FFE566',
         text: '#0F172A',
-        label: '💬 Message',
+        label: 'Message',
         isRequest: false,
       };
     }
     if (cat.includes('GIRL') || nm.includes('girl')) {
       return {
         bg: '#FFFFFF',
-        text: '#111827',
-        border: '#E5E7EB',
-        label: '🔒 Request',
+        text: figmaColors.ink,
+        border: figmaColors.border,
+        label: 'Request',
         isRequest: true,
       };
     }
     return {
       bg: '#FF7A59',
       text: '#FFFFFF',
-      label: '💬 Message',
+      label: 'Message',
       isRequest: false,
     };
   };
@@ -220,11 +232,7 @@ export default function DiscoverScreen() {
               <Text style={styles.communityName} numberOfLines={1}>
                 {item.name}
               </Text>
-              {item.verified !== false ? (
-                <View style={styles.verifiedCheck}>
-                  <Text style={styles.verifiedCheckText}>✓</Text>
-                </View>
-              ) : null}
+              {item.verified !== false ? <VerifiedBadge size={16} /> : null}
             </View>
 
             <Text style={styles.communityDesc} numberOfLines={1}>
@@ -232,12 +240,18 @@ export default function DiscoverScreen() {
             </Text>
 
             <View style={styles.metaStatsRow}>
-              <Text style={styles.metaStatText}>
-                👥 {item.memberCount || '2.4k'} members
-              </Text>
-              <Text style={styles.metaStatText} numberOfLines={1}>
-                📍 {item.location || 'Prospect Par'}
-              </Text>
+              <View style={styles.metaStatItem}>
+                <UsersIcon size={13} color={figmaColors.inkSecondary} />
+                <Text style={styles.metaStatText}>
+                  {item.memberCount || '2.4k'} members
+                </Text>
+              </View>
+              <View style={styles.metaStatItem}>
+                <PinIcon size={13} color={figmaColors.inkSecondary} />
+                <Text style={styles.metaStatText} numberOfLines={1}>
+                  {item.location || 'Prospect Park'}
+                </Text>
+              </View>
             </View>
           </View>
 
@@ -257,6 +271,11 @@ export default function DiscoverScreen() {
             }}
             activeOpacity={0.8}
           >
+            {btnStyle.isRequest ? (
+              <LockIcon size={12} color={btnStyle.text} />
+            ) : (
+              <ChatBubbleIcon size={13} color={btnStyle.text} />
+            )}
             <Text style={[styles.actionBtnText, { color: btnStyle.text }]}>
               {btnStyle.label}
             </Text>
@@ -322,9 +341,12 @@ export default function DiscoverScreen() {
 
             <View style={styles.channelContent}>
               <View style={styles.channelTitleRow}>
-                <Text style={styles.channelTagLabel}>
-                  🔒 Private in {item.name}
-                </Text>
+                <View style={styles.privateLabelRow}>
+                  <LockIcon size={12} color={figmaColors.inkSecondary} />
+                  <Text style={styles.channelTagLabel} numberOfLines={1}>
+                    Private in {item.name}
+                  </Text>
+                </View>
                 <Text style={styles.channelTime}>
                   {latestPrivateChat?.lastMessageTime || '1m'}
                 </Text>
@@ -358,39 +380,27 @@ export default function DiscoverScreen() {
   return (
     <SafeAreaView edges={['top']} style={styles.safeArea}>
       {/* Figma Top Logo Bar */}
-      <View style={styles.topLogoBar}>
-        <View style={styles.logoRow}>
-          <Text style={styles.brandName}>c</Text>
-          <View style={styles.brandCircleDot} />
-          <Text style={styles.brandName}>mmon</Text>
-        </View>
-
-        <TouchableOpacity
-          style={styles.userBadge}
-          onPress={() => navigation.navigate('Profile')}
-          activeOpacity={0.8}
-        >
-          <Text style={styles.userBadgeText}>{userInitials}</Text>
-          <View style={styles.userBadgeDot} />
-        </TouchableOpacity>
-      </View>
+      <BrandHeader
+        initials={userInitials}
+        onPressAvatar={() => navigation.navigate('Profile')}
+      />
 
       {/* Figma Dual Search Box */}
       <View style={styles.searchContainer}>
         <View style={styles.searchBox}>
           {/* Row 1: What are you into */}
           <View style={styles.searchRow}>
-            <Text style={styles.searchIcon}>🔍</Text>
+            <SearchIcon size={17} color={figmaColors.inkMuted} />
             <TextInput
               style={styles.searchInput}
               placeholder="What are you into?"
-              placeholderTextColor="#9CA3AF"
+              placeholderTextColor={figmaColors.inkInactive}
               value={searchTopic}
               onChangeText={setSearchTopic}
             />
             {searchTopic.length > 0 && (
               <TouchableOpacity onPress={() => setSearchTopic('')}>
-                <Text style={styles.clearBtn}>✕</Text>
+                <CloseIcon size={15} color={figmaColors.inkMuted} />
               </TouchableOpacity>
             )}
           </View>
@@ -399,11 +409,11 @@ export default function DiscoverScreen() {
 
           {/* Row 2: City or neighborhood + Near me */}
           <View style={styles.searchRow}>
-            <Text style={styles.searchIcon}>📍</Text>
+            <PinIcon size={17} color={figmaColors.inkMuted} />
             <TextInput
               style={styles.searchInput}
               placeholder="City or neighborhood"
-              placeholderTextColor="#9CA3AF"
+              placeholderTextColor={figmaColors.inkInactive}
               value={searchLocation}
               onChangeText={setSearchLocation}
             />
@@ -437,8 +447,12 @@ export default function DiscoverScreen() {
                 onPress={() => setActiveFilter(pill.id)}
                 activeOpacity={0.8}
               >
-                {pill.icon && (
-                  <Text style={styles.filterPillIcon}>{pill.icon}</Text>
+                {pill.hasCompass && (
+                  <CompassIcon
+                    size={14}
+                    color={isActive ? figmaColors.brandLime : figmaColors.inkSecondary}
+                    strokeWidth={1.6}
+                  />
                 )}
                 <Text
                   style={[
@@ -562,15 +576,11 @@ const styles = StyleSheet.create({
     paddingBottom: 10,
   },
   searchBox: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 16,
+    backgroundColor: figmaColors.bg,
+    borderRadius: 18,
     borderWidth: 1,
-    borderColor: '#EAECF0',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.04,
-    shadowRadius: 2,
-    elevation: 1,
+    borderColor: figmaColors.border,
+    ...figmaShadows.subtle,
     overflow: 'hidden',
   },
   searchRow: {
@@ -578,37 +588,29 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 14,
     paddingVertical: 10,
-  },
-  searchIcon: {
-    fontSize: 15,
-    marginRight: 10,
+    gap: 10,
   },
   searchInput: {
     flex: 1,
     fontSize: 14,
-    color: '#111827',
+    color: figmaColors.ink,
     paddingVertical: 2,
-  },
-  clearBtn: {
-    color: '#9CA3AF',
-    fontSize: 14,
-    paddingHorizontal: 4,
   },
   searchDivider: {
     height: 1,
-    backgroundColor: '#F3F4F6',
+    backgroundColor: figmaColors.borderHairline,
     marginHorizontal: 14,
   },
   nearMeBtn: {
-    backgroundColor: '#F3F4F6',
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    borderRadius: 12,
+    backgroundColor: figmaColors.sageSoft,
+    paddingHorizontal: 11,
+    paddingVertical: 6,
+    borderRadius: 14,
   },
   nearMeBtnText: {
-    color: '#111827',
+    color: figmaColors.inkButton,
     fontSize: 12,
-    fontWeight: '600',
+    fontWeight: '700',
   },
   filterPillsWrapper: {
     paddingBottom: 12,
@@ -620,18 +622,18 @@ const styles = StyleSheet.create({
   filterPill: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 5,
+    gap: 6,
     paddingHorizontal: 14,
-    paddingVertical: 7,
+    paddingVertical: 8,
     borderRadius: 20,
   },
   filterPillActive: {
-    backgroundColor: '#0F172A',
+    backgroundColor: figmaColors.ink,
   },
   filterPillInactive: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: figmaColors.bg,
     borderWidth: 1,
-    borderColor: '#EAECF0',
+    borderColor: figmaColors.border,
   },
   filterPillIcon: {
     fontSize: 13,
@@ -760,19 +762,33 @@ const styles = StyleSheet.create({
   metaStatsRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    gap: 10,
+  },
+  metaStatItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    flexShrink: 1,
   },
   metaStatText: {
     fontSize: 11,
-    color: '#9CA3AF',
+    color: figmaColors.inkMuted,
     fontWeight: '500',
   },
   actionBtn: {
-    paddingHorizontal: 12,
-    paddingVertical: 7,
+    flexDirection: 'row',
+    gap: 5,
+    paddingHorizontal: 13,
+    paddingVertical: 8,
     borderRadius: 20,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  privateLabelRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    flexShrink: 1,
   },
   actionBtnText: {
     fontSize: 12,

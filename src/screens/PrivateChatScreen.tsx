@@ -19,6 +19,20 @@ import { mobileApi } from '../api/client';
 import { mobileSocket } from '../api/socket';
 import { Community, ChatMessage, UserProfile } from '../types';
 import { useAuth } from '../context/AuthContext';
+import {
+  ChevronLeftIcon,
+  ChevronRightIcon,
+  SearchIcon,
+  MoreHorizontalIcon,
+  CloseIcon,
+  LockIcon,
+  CheckIcon,
+  ReplyIcon,
+  ChatBubbleIcon,
+  PlusIcon,
+  SendIcon,
+} from '../components/FigmaIcons';
+import { figmaColors } from '../theme/figmaTheme';
 
 export default function PrivateChatScreen() {
   const route = useRoute<any>();
@@ -432,7 +446,10 @@ export default function PrivateChatScreen() {
 
           <View style={styles.msgFooterRow}>
             {isSelf ? (
-              <Text style={styles.readReceiptText}>✓✓ Read</Text>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 3 }}>
+                <CheckIcon size={11} color={figmaColors.inkMuted} strokeWidth={1.3} />
+                <Text style={styles.readReceiptText}>Read</Text>
+              </View>
             ) : null}
 
             <TouchableOpacity
@@ -458,9 +475,10 @@ export default function PrivateChatScreen() {
 
             <TouchableOpacity
               onPress={() => setReplyTarget(item)}
-              style={styles.msgActionBtn}
+              style={[styles.msgActionBtn, { flexDirection: 'row', alignItems: 'center', gap: 4 }]}
             >
-              <Text style={styles.msgActionText}>↩ Reply</Text>
+              <ReplyIcon size={12} color={figmaColors.inkMuted} />
+              <Text style={styles.msgActionText}>Reply</Text>
             </TouchableOpacity>
 
             {isSelf ? (
@@ -486,7 +504,7 @@ export default function PrivateChatScreen() {
           style={styles.backButton}
           activeOpacity={0.7}
         >
-          <Text style={styles.backButtonText}>← Back</Text>
+          <ChevronLeftIcon size={20} color={figmaColors.ink} />
         </TouchableOpacity>
 
         <View style={styles.headerCenter}>
@@ -507,8 +525,8 @@ export default function PrivateChatScreen() {
           <View>
             <Text style={styles.headerTitle}>{recipient.name}</Text>
             <Text style={styles.headerSubtitle}>
-              {recipient.online !== false ? '● Online now' : 'Offline'}
-              {muted ? ' • 🔕 Muted' : ''}
+              {recipient.online !== false ? 'Online now' : 'Offline'}
+              {muted ? ' · Muted' : ''}
             </Text>
           </View>
         </View>
@@ -522,7 +540,7 @@ export default function PrivateChatScreen() {
             }}
             activeOpacity={0.7}
           >
-            <Text style={{ fontSize: 16 }}>🔍</Text>
+            <SearchIcon size={17} color={figmaColors.ink} />
           </TouchableOpacity>
 
           <TouchableOpacity
@@ -530,7 +548,7 @@ export default function PrivateChatScreen() {
             onPress={() => setShowOptionsModal(true)}
             activeOpacity={0.7}
           >
-            <Text style={styles.optionsButtonText}>•••</Text>
+            <MoreHorizontalIcon size={20} color={figmaColors.ink} />
           </TouchableOpacity>
         </View>
       </View>
@@ -541,15 +559,15 @@ export default function PrivateChatScreen() {
           style={{
             flexDirection: 'row',
             alignItems: 'center',
-            backgroundColor: '#F8FAFC',
+            backgroundColor: figmaColors.surfaceSoft,
             borderBottomWidth: 1,
-            borderBottomColor: '#E2E8F0',
+            borderBottomColor: figmaColors.border,
             paddingHorizontal: 16,
             paddingVertical: 8,
             gap: 8,
           }}
         >
-          <Text style={{ fontSize: 14 }}>🔍</Text>
+          <SearchIcon size={16} color={figmaColors.inkMuted} />
           <TextInput
             style={{
               flex: 1,
@@ -598,7 +616,7 @@ export default function PrivateChatScreen() {
             />
           ) : (
             <View style={styles.contextCommFallback}>
-              <Text style={{ fontSize: 12 }}>💬</Text>
+              <ChatBubbleIcon size={13} color={figmaColors.inkOlive} />
             </View>
           )}
           <View style={{ flex: 1 }}>
@@ -608,7 +626,7 @@ export default function PrivateChatScreen() {
             <Text style={styles.contextBannerSub}>View community room</Text>
           </View>
         </View>
-        <Text style={styles.contextChevron}>›</Text>
+        <ChevronRightIcon size={16} color={figmaColors.inkMuted} />
       </TouchableOpacity>
 
       <KeyboardAvoidingView
@@ -710,13 +728,17 @@ export default function PrivateChatScreen() {
             onPress={() => setShowPlusMenu(!showPlusMenu)}
             activeOpacity={0.75}
           >
-            <Text style={styles.plusBtnText}>{showPlusMenu ? '✕' : '＋'}</Text>
+            {showPlusMenu ? (
+              <CloseIcon size={17} color={figmaColors.ink} />
+            ) : (
+              <PlusIcon size={18} color={figmaColors.ink} strokeWidth={1.75} />
+            )}
           </TouchableOpacity>
 
           <TextInput
             style={styles.textInput}
             placeholder={`Message ${firstName} privately...`}
-            placeholderTextColor="#94A3B8"
+            placeholderTextColor={figmaColors.inkInactive}
             value={inputText}
             onChangeText={handleTextChange}
             multiline
@@ -731,7 +753,10 @@ export default function PrivateChatScreen() {
             disabled={!inputText.trim() || sending}
             activeOpacity={0.75}
           >
-            <Text style={styles.sendButtonText}>Send</Text>
+            <SendIcon
+              size={16}
+              color={!inputText.trim() ? figmaColors.inkInactive : figmaColors.brandLime}
+            />
           </TouchableOpacity>
         </View>
       </KeyboardAvoidingView>
@@ -1102,15 +1127,15 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
   },
   myBubble: {
-    backgroundColor: '#DCFCE7',
+    backgroundColor: figmaColors.sentBubble,
     borderWidth: 1,
-    borderColor: '#BBF7D0',
+    borderColor: figmaColors.sentBubbleBorder,
     borderTopRightRadius: 4,
   },
   otherBubble: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: figmaColors.bg,
     borderWidth: 1,
-    borderColor: '#EAECF0',
+    borderColor: figmaColors.border,
     borderTopLeftRadius: 4,
   },
   replyQuoteBox: {

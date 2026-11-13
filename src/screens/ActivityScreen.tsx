@@ -14,6 +14,15 @@ import { mobileApi } from '../api/client';
 import { mobileSocket } from '../api/socket';
 import { Community } from '../types';
 import BottomNav from '../components/BottomNav';
+import {
+  ChevronLeftIcon,
+  BellIcon,
+  CalendarIcon,
+  LockIcon,
+  ChatBubbleIcon,
+  ReplyIcon,
+} from '../components/FigmaIcons';
+import { figmaColors } from '../theme/figmaTheme';
 
 interface ActivityItem {
   id: string;
@@ -202,6 +211,20 @@ export default function ActivityScreen() {
     }
   };
 
+  const renderActivityIcon = (type: ActivityItem['type']) => {
+    switch (type) {
+      case 'event':
+        return <CalendarIcon size={18} color={figmaColors.ink} />;
+      case 'sidechat':
+        return <LockIcon size={17} color={figmaColors.ink} />;
+      case 'reply':
+        return <ReplyIcon size={17} color={figmaColors.ink} />;
+      case 'message':
+      default:
+        return <ChatBubbleIcon size={17} color={figmaColors.ink} />;
+    }
+  };
+
   const renderItem = ({ item }: { item: ActivityItem }) => (
     <TouchableOpacity
       style={styles.card}
@@ -209,7 +232,7 @@ export default function ActivityScreen() {
       activeOpacity={0.75}
     >
       <View style={[styles.iconBox, { backgroundColor: item.badgeColor }]}>
-        <Text style={styles.iconText}>{item.icon}</Text>
+        {renderActivityIcon(item.type)}
       </View>
 
       <View style={styles.cardContent}>
@@ -240,7 +263,7 @@ export default function ActivityScreen() {
           style={styles.backBtn}
           activeOpacity={0.7}
         >
-          <Text style={styles.backBtnText}>← Back</Text>
+          <ChevronLeftIcon size={20} color={figmaColors.ink} />
         </TouchableOpacity>
         <View style={{ flex: 1 }}>
           <Text style={styles.headerTitle}>Activity & Updates</Text>
@@ -300,7 +323,9 @@ export default function ActivityScreen() {
           }
           ListEmptyComponent={
             <View style={styles.emptyBox}>
-              <Text style={styles.emptyIcon}>🔔</Text>
+              <View style={{ marginBottom: 10 }}>
+                <BellIcon size={32} color={figmaColors.inkMuted} />
+              </View>
               <Text style={styles.emptyTitle}>No activity yet</Text>
               <Text style={styles.emptySubtitle}>
                 Messages, likes, thread comments, events, and private side-chats will appear here in real time.
