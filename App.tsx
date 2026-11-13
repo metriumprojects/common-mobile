@@ -198,13 +198,9 @@ export default function App() {
           if (fetched.isNew) {
             Toast.show({
               type: 'info',
-              text1: 'Update Ready',
-              text2: 'Tap here to apply the latest update now',
-              visibilityTime: 6000,
-              onPress: () => {
-                Toast.hide();
-                Updates.reloadAsync().catch(() => {});
-              },
+              text1: 'Update Downloaded',
+              text2: 'Close and reopen the app to apply the latest update.',
+              visibilityTime: 4000,
             });
           }
         }
@@ -215,7 +211,9 @@ export default function App() {
       }
     };
 
-    checkAndApplyOTA();
+    const timer = setTimeout(() => {
+      checkAndApplyOTA();
+    }, 3000);
 
     const sub = AppState.addEventListener('change', (state: AppStateStatus) => {
       if (state === 'active') {
@@ -223,7 +221,10 @@ export default function App() {
       }
     });
 
-    return () => sub.remove();
+    return () => {
+      clearTimeout(timer);
+      sub.remove();
+    };
   }, []);
 
   return (
