@@ -95,12 +95,24 @@ export default function CommunityChatScreen() {
   const [commentInput, setCommentInput] = useState('');
   const [sendingComment, setSendingComment] = useState(false);
 
-  // Pin / Event Editor Modal
-  const [manageMode, setManageMode] = useState<'pin' | 'event' | null>(null);
+  // Pin / Event / Edit Community Modal
+  const [manageMode, setManageMode] = useState<'pin' | 'event' | 'edit' | null>(null);
   const [pinText, setPinText] = useState('');
   const [eventTag, setEventTag] = useState('TONIGHT • 6:30 PM');
   const [eventTitle, setEventTitle] = useState('');
   const [eventLocation, setEventLocation] = useState('');
+  const [editName, setEditName] = useState('');
+  const [editCategory, setEditCategory] = useState('');
+  const [editLocation, setEditLocation] = useState('');
+  const [editDescription, setEditDescription] = useState('');
+
+  const isCommunityAdmin = Boolean(
+    user?.id &&
+      community &&
+      (community.creatorId === user.id ||
+        (Array.isArray(community.moderators) && community.moderators.includes(user.id)) ||
+        (!community.creatorId && community.isJoined))
+  );
 
   const flatListRef = useRef<FlatList>(null);
   const typingTimeoutRef = useRef<any>(null);
@@ -541,10 +553,22 @@ export default function CommunityChatScreen() {
           location: eventLocation.trim() || community.location || 'Online',
         });
         Toast.show({ type: 'success', text1: 'Community Event Scheduled' });
+      } else if (manageMode === 'edit' && editName.trim()) {
+        const updated = await mobileApi.updateCommunity(community.id, {
+          name: editName.trim(),
+          category: editCategory.trim() || community.category,
+          location: editLocation.trim() || community.location,
+          description: editDescription.trim(),
+        });
+        setCommunity((prev) => (prev ? { ...prev, ...updated } : prev));
+        Toast.show({ type: 'success', text1: 'Community Updated' });
       }
       setManageMode(null);
-    } catch (err) {
-      Toast.show({ type: 'error', text1: 'Update Failed' });
+    } catch (err: any) {
+      Toast.show({
+        type: 'error',
+        text1: err?.response?.data?.error || 'Update Failed',
+      });
     }
   };
 
@@ -1719,46 +1743,64 @@ export default function CommunityChatScreen() {
                 </Text>
               </View>
 
-              {user?.id === community?.creatorId ? (
-                <TouchableOpacity
-                  style={[
-                    styles.infoActionSecondary,
-                    { backgroundColor: '#FEF2F2', borderColor: '#FECACA' },
-                  ]}
-                  onPress={() => {
-                    Alert.alert(
-                      'Delete Community',
-                      `Permanently delete "${community?.name}" and all its messages? This cannot be undone.`,
-                      [
-                        { text: 'Cancel', style: 'cancel' },
-                        {
-                          text: 'Delete',
-                          style: 'destructive',
-                          onPress: async () => {
-                            try {
-                              await mobileApi.deleteCommunity(community?.id || communityId);
-                              setShowInfoModal(false);
-                              Toast.show({
-                                type: 'success',
-                                text1: 'Community deleted',
-                              });
-                              navigation.goBack();
-                            } catch (e: any) {
-                              Toast.show({
-                                type: 'error',
-                                text1: e?.response?.data?.error || 'Could not delete community',
-                              });
-                            }
+              {isCommunityAdmin ? (
+                <>
+                  <TouchableOpacity
+                    style={styles.infoActionPrimary}
+                    onPress={() => {
+                      setEditName(community?.name || '');
+                      setEditCategory(community?.category || 'COMMUNITY');
+                      setEditLocation(community?.location || '');
+                      setEditDescription(community?.description || '');
+                      setShowInfoModal(false);
+                      setManageMode('edit');
+                    }}
+                  >
+                    <Text style={styles.infoActionPrimaryText}>
+                      Edit Community Details
+                    </Text>
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    style={[
+                      styles.infoActionSecondary,
+                      { backgroundColor: '#FEF2F2', borderColor: '#FECACA' },
+                    ]}
+                    onPress={() => {
+                      Alert.alert(
+                        'Delete Community',
+                        `Permanently delete "${community?.name}" and all its messages? This cannot be undone.`,
+                        [
+                          { text: 'Cancel', style: 'cancel' },
+                          {
+                            text: 'Delete',
+                            style: 'destructive',
+                            onPress: async () => {
+                              try {
+                                await mobileApi.deleteCommunity(community?.id || communityId);
+                                setShowInfoModal(false);
+                                Toast.show({
+                                  type: 'success',
+                                  text1: 'Community deleted',
+                                });
+                                navigation.goBack();
+                              } catch (e: any) {
+                                Toast.show({
+                                  type: 'error',
+                                  text1: e?.response?.data?.error || 'Could not delete community',
+                                });
+                              }
+                            },
                           },
-                        },
-                      ]
-                    );
-                  }}
-                >
-                  <Text style={[styles.infoActionSecondaryText, { color: '#DC2626' }]}>
-                    Delete Community
-                  </Text>
-                </TouchableOpacity>
+                        ]
+                      );
+                    }}
+                  >
+                    <Text style={[styles.infoActionSecondaryText, { color: '#DC2626' }]}>
+                      Delete Community
+                    </Text>
+                  </TouchableOpacity>
+                </>
               ) : (
                 <TouchableOpacity
                   style={styles.infoActionSecondary}
@@ -1789,14 +1831,60 @@ export default function CommunityChatScreen() {
               <Text style={styles.modalTitle}>
                 {manageMode === 'pin'
                   ? 'Update Pinned Notice'
-                  : 'Schedule Community Event'}
+                  : manageMode === 'edit'
+                    ? 'Edit Community'
+                    : 'Schedule Community Event'}
               </Text>
               <TouchableOpacity onPress={() => setManageMode(null)}>
                 <Text style={styles.modalCloseText}>✕</Text>
               </TouchableOpacity>
             </View>
 
-            {manageMode === 'pin' ? (
+            {manageMode === 'edit' ? (
+              <View style={{ gap: 10 }}>
+                <Text style={styles.inputLabelSmall}>COMMUNITY NAME</Text>
+                <TextInput
+                  style={styles.manageInput}
+                  placeholder="Community name"
+                  placeholderTextColor="#64748B"
+                  value={editName}
+                  onChangeText={setEditName}
+                />
+                <Text style={styles.inputLabelSmall}>CATEGORY</Text>
+                <TextInput
+                  style={styles.manageInput}
+                  placeholder="e.g. SPORT, TECH, GAMING"
+                  placeholderTextColor="#64748B"
+                  value={editCategory}
+                  onChangeText={setEditCategory}
+                />
+                <Text style={styles.inputLabelSmall}>LOCATION</Text>
+                <TextInput
+                  style={styles.manageInput}
+                  placeholder="e.g. Brooklyn or Global"
+                  placeholderTextColor="#64748B"
+                  value={editLocation}
+                  onChangeText={setEditLocation}
+                />
+                <Text style={styles.inputLabelSmall}>DESCRIPTION</Text>
+                <TextInput
+                  style={styles.manageInput}
+                  placeholder="Describe this community..."
+                  placeholderTextColor="#64748B"
+                  value={editDescription}
+                  onChangeText={setEditDescription}
+                  multiline
+                />
+                <TouchableOpacity
+                  style={[styles.infoActionPrimary, { marginTop: 8 }]}
+                  onPress={handleSavePinOrEvent}
+                >
+                  <Text style={styles.infoActionPrimaryText}>
+                    Save Changes
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            ) : manageMode === 'pin' ? (
               <View style={{ gap: 12 }}>
                 <Text style={styles.modalSubtitle}>
                   Pinned notices appear at the top of the community channel for all members.
