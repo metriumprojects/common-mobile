@@ -35,6 +35,12 @@ import {
   ChatBubbleIcon,
   PlusIcon,
   SendIcon,
+  ThumbsUpIcon,
+  SmileIcon,
+  TrashIcon,
+  FlagIcon,
+  BookmarkIcon,
+  ShieldIcon,
 } from '../components/FigmaIcons';
 import { figmaColors, figmaShadows } from '../theme/figmaTheme';
 
@@ -619,7 +625,7 @@ export default function CommunityChatScreen() {
             activeOpacity={0.75}
           >
             <View style={styles.pinIconBox}>
-              <Text style={{ fontSize: 12 }}>📌</Text>
+              <BookmarkIcon size={13} color={figmaColors.inkOlive} />
             </View>
             <View style={{ flex: 1 }}>
               <Text style={styles.pinnedAuthor}>
@@ -872,22 +878,29 @@ export default function CommunityChatScreen() {
               style={styles.actionBtn}
               activeOpacity={0.6}
             >
-              <Text
-                style={[
-                  styles.actionBtnText,
-                  item.userLiked && styles.actionBtnTextLiked,
-                ]}
-              >
-                👍 Like • {item.likes || 0}
-              </Text>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                <ThumbsUpIcon
+                  size={12}
+                  color={item.userLiked ? figmaColors.inkOlive : figmaColors.inkMuted}
+                />
+                <Text
+                  style={[
+                    styles.actionBtnText,
+                    item.userLiked && styles.actionBtnTextLiked,
+                  ]}
+                >
+                  Like · {item.likes || 0}
+                </Text>
+              </View>
             </TouchableOpacity>
 
             <TouchableOpacity
               onPress={() => setReactionTargetMessage(item)}
-              style={styles.actionBtn}
+              style={[styles.actionBtn, { flexDirection: 'row', alignItems: 'center', gap: 4 }]}
               activeOpacity={0.6}
             >
-              <Text style={styles.actionBtnText}>😊 React</Text>
+              <SmileIcon size={12} color={figmaColors.inkMuted} />
+              <Text style={styles.actionBtnText}>React</Text>
             </TouchableOpacity>
 
             <TouchableOpacity
@@ -916,7 +929,7 @@ export default function CommunityChatScreen() {
                 style={styles.actionBtn}
                 activeOpacity={0.6}
               >
-                <Text style={[styles.actionBtnText, { color: '#EF4444' }]}>🗑️</Text>
+                <TrashIcon size={13} color={figmaColors.danger} />
               </TouchableOpacity>
             ) : null}
 
@@ -926,7 +939,7 @@ export default function CommunityChatScreen() {
                 style={styles.actionBtn}
                 activeOpacity={0.6}
               >
-                <Text style={[styles.actionBtnText, { color: '#94A3B8' }]}>🚩</Text>
+                <FlagIcon size={13} color={figmaColors.inkInactive} />
               </TouchableOpacity>
             ) : null}
           </View>
@@ -1085,7 +1098,7 @@ export default function CommunityChatScreen() {
         {typingUser ? (
           <View style={styles.typingBanner}>
             <Text style={styles.typingBannerText}>
-              ✍️ {typingUser} is typing...
+              {typingUser} is typing...
             </Text>
           </View>
         ) : null}
@@ -1094,46 +1107,49 @@ export default function CommunityChatScreen() {
         {showPlusMenu ? (
           <View style={styles.plusMenuPopup}>
             <TouchableOpacity
-              style={styles.plusMenuItem}
+              style={[styles.plusMenuItem, { flexDirection: 'row', alignItems: 'center', gap: 8 }]}
               onPress={() => {
                 setShowPlusMenu(false);
                 setInputText(
-                  "📍 Sharing route for tonight's meetup: 5 miles loop starting at main arch 🏃‍♂️"
+                  "Sharing route for tonight's meetup: 5 miles loop starting at main arch"
                 );
               }}
             >
+              <PinIcon size={15} color={figmaColors.ink} />
               <Text style={styles.plusMenuItemText}>
-                📍 Share Route / Location
+                Share Route / Location
               </Text>
             </TouchableOpacity>
 
             <TouchableOpacity
-              style={styles.plusMenuItem}
+              style={[styles.plusMenuItem, { flexDirection: 'row', alignItems: 'center', gap: 8 }]}
               onPress={() => {
                 setShowPlusMenu(false);
                 setInputText(
-                  '📊 Quick poll: Who prefers 6:30 PM vs 7:00 PM for this week?'
+                  'Quick poll: Who prefers 6:30 PM vs 7:00 PM for this week?'
                 );
               }}
             >
-              <Text style={styles.plusMenuItemText}>📊 Create Quick Poll</Text>
+              <ChatBubbleIcon size={15} color={figmaColors.ink} />
+              <Text style={styles.plusMenuItemText}>Create Quick Poll</Text>
             </TouchableOpacity>
 
             <TouchableOpacity
-              style={styles.plusMenuItem}
+              style={[styles.plusMenuItem, { flexDirection: 'row', alignItems: 'center', gap: 8 }]}
               onPress={() => {
                 setShowPlusMenu(false);
                 setPinText(community?.pinnedNotice?.text || '');
                 setManageMode('pin');
               }}
             >
+              <BookmarkIcon size={15} color={figmaColors.ink} />
               <Text style={styles.plusMenuItemText}>
-                📌 Update Pinned Notice
+                Update Pinned Notice
               </Text>
             </TouchableOpacity>
 
             <TouchableOpacity
-              style={styles.plusMenuItem}
+              style={[styles.plusMenuItem, { flexDirection: 'row', alignItems: 'center', gap: 8 }]}
               onPress={() => {
                 setShowPlusMenu(false);
                 setEventTitle(community?.event?.title || '');
@@ -1143,13 +1159,14 @@ export default function CommunityChatScreen() {
                 setManageMode('event');
               }}
             >
+              <CalendarIcon size={15} color={figmaColors.ink} />
               <Text style={styles.plusMenuItemText}>
-                📅 Schedule Community Event
+                Schedule Community Event
               </Text>
             </TouchableOpacity>
 
             <TouchableOpacity
-              style={styles.plusMenuItem}
+              style={[styles.plusMenuItem, { flexDirection: 'row', alignItems: 'center', gap: 8 }]}
               onPress={() => {
                 setShowPlusMenu(false);
                 if (community) {
@@ -1159,8 +1176,9 @@ export default function CommunityChatScreen() {
                 }
               }}
             >
+              <LockIcon size={15} color={figmaColors.ink} />
               <Text style={styles.plusMenuItemText}>
-                🔒 Start Scoped Side-Chat
+                Start Scoped Side-Chat
               </Text>
             </TouchableOpacity>
           </View>

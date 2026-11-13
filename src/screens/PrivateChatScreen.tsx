@@ -31,6 +31,11 @@ import {
   ChatBubbleIcon,
   PlusIcon,
   SendIcon,
+  ThumbsUpIcon,
+  SmileIcon,
+  TrashIcon,
+  PinIcon,
+  CalendarIcon,
 } from '../components/FigmaIcons';
 import { figmaColors } from '../theme/figmaTheme';
 
@@ -456,21 +461,28 @@ export default function PrivateChatScreen() {
               onPress={() => handleToggleLike(item.id)}
               style={styles.msgActionBtn}
             >
-              <Text
-                style={[
-                  styles.msgActionText,
-                  item.userLiked && styles.msgActionLiked,
-                ]}
-              >
-                👍 Like {item.likes ? `• ${item.likes}` : ''}
-              </Text>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                <ThumbsUpIcon
+                  size={12}
+                  color={item.userLiked ? figmaColors.inkOlive : figmaColors.inkMuted}
+                />
+                <Text
+                  style={[
+                    styles.msgActionText,
+                    item.userLiked && styles.msgActionLiked,
+                  ]}
+                >
+                  Like {item.likes ? `· ${item.likes}` : ''}
+                </Text>
+              </View>
             </TouchableOpacity>
 
             <TouchableOpacity
               onPress={() => setReactionTargetMessage(item)}
-              style={styles.msgActionBtn}
+              style={[styles.msgActionBtn, { flexDirection: 'row', alignItems: 'center', gap: 4 }]}
             >
-              <Text style={styles.msgActionText}>😊 React</Text>
+              <SmileIcon size={12} color={figmaColors.inkMuted} />
+              <Text style={styles.msgActionText}>React</Text>
             </TouchableOpacity>
 
             <TouchableOpacity
@@ -486,7 +498,7 @@ export default function PrivateChatScreen() {
                 onPress={() => handleDeleteMessage(item.id)}
                 style={styles.msgActionBtn}
               >
-                <Text style={[styles.msgActionText, { color: '#EF4444' }]}>🗑️</Text>
+                <TrashIcon size={13} color={figmaColors.danger} />
               </TouchableOpacity>
             ) : null}
           </View>
@@ -664,38 +676,41 @@ export default function PrivateChatScreen() {
         {showPlusMenu ? (
           <View style={styles.plusMenuPopup}>
             <TouchableOpacity
-              style={styles.plusMenuItem}
+              style={[styles.plusMenuItem, { flexDirection: 'row', alignItems: 'center', gap: 8 }]}
               onPress={() => {
                 setShowPlusMenu(false);
-                setInputText(`👋 Hey ${firstName}! Are you going to this week's meetup?`);
+                setInputText(`Hey ${firstName}! Are you going to this week's meetup?`);
               }}
             >
+              <CalendarIcon size={15} color={figmaColors.ink} />
               <Text style={styles.plusMenuItemText}>
-                👋 Ask About Weekly Meetup
+                Ask About Weekly Meetup
               </Text>
             </TouchableOpacity>
 
             <TouchableOpacity
-              style={styles.plusMenuItem}
+              style={[styles.plusMenuItem, { flexDirection: 'row', alignItems: 'center', gap: 8 }]}
               onPress={() => {
                 setShowPlusMenu(false);
-                setInputText(`📍 Let's meet near the entrance 10 mins before start!`);
+                setInputText(`Let's meet near the entrance 10 mins before start!`);
               }}
             >
+              <PinIcon size={15} color={figmaColors.ink} />
               <Text style={styles.plusMenuItemText}>
-                📍 Share Meetup Spot
+                Share Meetup Spot
               </Text>
             </TouchableOpacity>
 
             <TouchableOpacity
-              style={styles.plusMenuItem}
+              style={[styles.plusMenuItem, { flexDirection: 'row', alignItems: 'center', gap: 8 }]}
               onPress={() => {
                 setShowPlusMenu(false);
-                setInputText(`☕ Down for a quick coffee catchup after the session?`);
+                setInputText(`Down for a quick coffee catchup after the session?`);
               }}
             >
+              <ChatBubbleIcon size={15} color={figmaColors.ink} />
               <Text style={styles.plusMenuItemText}>
-                ☕ Suggest 1-on-1 Catchup
+                Suggest 1-on-1 Catchup
               </Text>
             </TouchableOpacity>
           </View>
@@ -716,7 +731,7 @@ export default function PrivateChatScreen() {
               onPress={() => setReplyTarget(null)}
               style={{ padding: 6 }}
             >
-              <Text style={{ color: '#94A3B8', fontSize: 14 }}>✕</Text>
+              <CloseIcon size={15} color={figmaColors.inkMuted} />
             </TouchableOpacity>
           </View>
         ) : null}

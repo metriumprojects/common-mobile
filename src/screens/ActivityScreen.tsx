@@ -96,7 +96,7 @@ export default function ActivityScreen() {
           badgeColor: '#065F46',
           title: `${comm.event.title} (${comm.event.tag})`,
           description: `${comm.event.location} • ${comm.event.attendeesCount} going in ${comm.name}`,
-          timestamp: comm.event.isJoined ? 'Joined ✓' : 'RSVP Open',
+          timestamp: comm.event.isJoined ? 'Joined' : 'RSVP Open',
           rawTime: Date.now() - 120000,
           communityId: comm.id,
           communityName: comm.name,

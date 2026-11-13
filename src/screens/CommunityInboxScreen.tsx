@@ -382,15 +382,16 @@ export default function CommunityInboxScreen() {
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>Start Scoped Side-Chat</Text>
               <TouchableOpacity onPress={() => setShowNewChatModal(false)}>
-                <Text style={styles.modalClose}>✕</Text>
+                <CloseIcon size={18} color={figmaColors.ink} />
               </TouchableOpacity>
             </View>
 
             <ScrollView keyboardShouldPersistTaps="handled">
-              <View style={styles.scopedNote}>
-                <Text style={styles.scopedNoteText}>
-                  🔒 This 1-on-1 conversation will be scoped inside{' '}
-                  <Text style={{ fontWeight: '800', color: '#10B981' }}>
+              <View style={[styles.scopedNote, { flexDirection: 'row', alignItems: 'center', gap: 8 }]}>
+                <LockIcon size={14} color={figmaColors.inkOlive} />
+                <Text style={[styles.scopedNoteText, { flex: 1 }]}>
+                  This 1-on-1 conversation will be scoped inside{' '}
+                  <Text style={{ fontWeight: '800', color: figmaColors.inkOlive }}>
                     {community?.name}
                   </Text>
                   .

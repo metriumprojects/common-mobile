@@ -19,7 +19,14 @@ import { mobileSocket } from '../api/socket';
 import { Community, UserProfile } from '../types';
 import { useAuth } from '../context/AuthContext';
 import BottomNav from '../components/BottomNav';
-import { VerifiedBadge, LockIcon, CloseIcon } from '../components/FigmaIcons';
+import {
+  VerifiedBadge,
+  LockIcon,
+  CloseIcon,
+  ChevronLeftIcon,
+  ChevronRightIcon,
+  EditIcon,
+} from '../components/FigmaIcons';
 import { figmaColors } from '../theme/figmaTheme';
 
 const AVATAR_COLORS = [
@@ -228,7 +235,7 @@ export default function ProfileScreen() {
           style={styles.backButton}
           activeOpacity={0.7}
         >
-          <Text style={styles.backButtonText}>← Back</Text>
+          <ChevronLeftIcon size={20} color={figmaColors.ink} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>My Profile & Settings</Text>
         <TouchableOpacity
@@ -273,12 +280,13 @@ export default function ProfileScreen() {
               </View>
 
               <TouchableOpacity
-                style={styles.customizeBtn}
+                style={[styles.customizeBtn, { flexDirection: 'row', alignItems: 'center', gap: 6 }]}
                 onPress={() => setShowEditModal(true)}
                 activeOpacity={0.8}
               >
+                <EditIcon size={14} color={figmaColors.ink} />
                 <Text style={styles.customizeBtnText}>
-                  ✏️ Edit Profile & Role
+                  Edit Profile & Role
                 </Text>
               </TouchableOpacity>
             </View>
@@ -354,7 +362,10 @@ export default function ProfileScreen() {
                         {c.category} • {c.location}
                       </Text>
                     </View>
-                    <Text style={styles.commRowArrow}>Open →</Text>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 3 }}>
+                      <Text style={styles.commRowArrow}>Open</Text>
+                      <ChevronRightIcon size={14} color={figmaColors.inkOlive} />
+                    </View>
                   </TouchableOpacity>
                 ))}
               </View>
@@ -451,7 +462,7 @@ export default function ProfileScreen() {
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>Edit Profile</Text>
               <TouchableOpacity onPress={() => setShowEditModal(false)}>
-                <Text style={styles.modalClose}>✕</Text>
+                <CloseIcon size={18} color={figmaColors.ink} />
               </TouchableOpacity>
             </View>
 

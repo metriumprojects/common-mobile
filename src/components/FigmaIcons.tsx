@@ -504,6 +504,142 @@ export function LogOutIcon({
   );
 }
 
+export function ThumbsUpIcon({
+  size = 13,
+  color = figmaColors.inkMuted,
+  strokeWidth = 1.35,
+}: IconProps) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 20 20" fill="none">
+      <Path
+        d="M5.83333 9.16667V17.5H3.33333C2.89131 17.5 2.46738 17.3244 2.15482 17.0118C1.84226 16.6993 1.66667 16.2754 1.66667 15.8333V10.8333C1.66667 10.3913 1.84226 9.96738 2.15482 9.65482C2.46738 9.34226 2.89131 9.16667 3.33333 9.16667H5.83333ZM5.83333 9.16667L9.16667 2.5C9.82971 2.5 10.4656 2.76339 10.9344 3.23223C11.4033 3.70107 11.6667 4.33696 11.6667 5V7.5H16.3833C16.6249 7.49726 16.8642 7.54695 17.0849 7.64565C17.3055 7.74435 17.5024 7.88974 17.662 8.07186C17.8217 8.25397 17.9403 8.46854 18.0098 8.70089C18.0793 8.93323 18.098 9.17791 18.0645 9.41833L16.9145 16.085C16.8543 16.4848 16.6524 16.8498 16.3458 17.113C16.0393 17.3762 15.6486 17.5204 15.2445 17.5192H5.83333"
+        stroke={color}
+        strokeWidth={strokeWidth}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </Svg>
+  );
+}
+
+export function SmileIcon({
+  size = 13,
+  color = figmaColors.inkMuted,
+  strokeWidth = 1.35,
+}: IconProps) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 20 20" fill="none">
+      <Circle cx="10" cy="10" r="7.5" stroke={color} strokeWidth={strokeWidth} />
+      <Path
+        d="M6.66667 11.6667C7.08333 12.9167 8.41667 13.75 10 13.75C11.5833 13.75 12.9167 12.9167 13.3333 11.6667"
+        stroke={color}
+        strokeWidth={strokeWidth}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <Circle cx="7.5" cy="8.125" r="0.85" fill={color} />
+      <Circle cx="12.5" cy="8.125" r="0.85" fill={color} />
+    </Svg>
+  );
+}
+
+export function TrashIcon({
+  size = 13,
+  color = figmaColors.danger,
+  strokeWidth = 1.35,
+}: IconProps) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 20 20" fill="none">
+      <Path
+        d="M2.5 5H17.5M15.8333 5V16.6667C15.8333 17.5 15 18.3333 14.1667 18.3333H5.83333C5 18.3333 4.16667 17.5 4.16667 16.6667V5M6.66667 5V3.33333C6.66667 2.5 7.5 1.66667 8.33333 1.66667H11.6667C12.5 1.66667 13.3333 2.5 13.3333 3.33333V5"
+        stroke={color}
+        strokeWidth={strokeWidth}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </Svg>
+  );
+}
+
+export function FlagIcon({
+  size = 13,
+  color = figmaColors.inkInactive,
+  strokeWidth = 1.35,
+}: IconProps) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 20 20" fill="none">
+      <Path
+        d="M3.33333 12.5C3.33333 12.5 4.16667 11.6667 6.66667 11.6667C9.16667 11.6667 10.8333 13.3333 13.3333 13.3333C15.8333 13.3333 16.6667 12.5 16.6667 12.5V2.5C16.6667 2.5 15.8333 3.33333 13.3333 3.33333C10.8333 3.33333 9.16667 1.66667 6.66667 1.66667C4.16667 1.66667 3.33333 2.5 3.33333 2.5V17.5"
+        stroke={color}
+        strokeWidth={strokeWidth}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </Svg>
+  );
+}
+
+export function EditIcon({
+  size = 14,
+  color = figmaColors.ink,
+  strokeWidth = 1.4,
+}: IconProps) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 20 20" fill="none">
+      <Path
+        d="M9.16667 3.33333H3.33333C2.89131 3.33333 2.46738 3.50893 2.15482 3.82149C1.84226 4.13405 1.66667 4.55797 1.66667 5V16.6667C1.66667 17.1087 1.84226 17.5326 2.15482 17.8452C2.46738 18.1577 2.89131 18.3333 3.33333 18.3333H15C15.442 18.3333 15.866 18.1577 16.1785 17.8452C16.4911 17.5326 16.6667 17.1087 16.6667 16.6667V10.8333"
+        stroke={color}
+        strokeWidth={strokeWidth}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <Path
+        d="M15.4167 2.08333C15.7482 1.75181 16.1978 1.56557 16.6667 1.56557C17.1355 1.56557 17.5851 1.75181 17.9167 2.08333C18.2482 2.41485 18.4344 2.86449 18.4344 3.33333C18.4344 3.80217 18.2482 4.25181 17.9167 4.58333L10 12.5L6.66667 13.3333L7.5 10L15.4167 2.08333Z"
+        stroke={color}
+        strokeWidth={strokeWidth}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </Svg>
+  );
+}
+
+export function BookmarkIcon({
+  size = 13,
+  color = figmaColors.inkOlive,
+  strokeWidth = 1.4,
+}: IconProps) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 20 20" fill="none">
+      <Path
+        d="M15.8333 17.5L10 13.3333L4.16667 17.5V4.16667C4.16667 3.72464 4.34226 3.30072 4.65482 2.98816C4.96738 2.67559 5.39131 2.5 5.83333 2.5H14.1667C14.6087 2.5 15.0326 2.67559 15.3452 2.98816C15.6577 3.30072 15.8333 3.72464 15.8333 4.16667V17.5Z"
+        stroke={color}
+        strokeWidth={strokeWidth}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </Svg>
+  );
+}
+
+export function ShieldIcon({
+  size = 15,
+  color = figmaColors.ink,
+  strokeWidth = 1.4,
+}: IconProps) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 20 20" fill="none">
+      <Path
+        d="M10 18.3333C10 18.3333 16.6667 15 16.6667 10V4.16667L10 1.66667L3.33333 4.16667V10C3.33333 15 10 18.3333 10 18.3333Z"
+        stroke={color}
+        strokeWidth={strokeWidth}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </Svg>
+  );
+}
+
 const styles = StyleSheet.create({
   verifiedBadge: {
     backgroundColor: figmaColors.brandLime,
@@ -511,3 +647,4 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
 });
+

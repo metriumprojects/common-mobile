@@ -150,9 +150,9 @@ export default function DiscoverScreen() {
 
     if (cat.includes('SPORT') || nm.includes('run')) {
       return {
-        bg: '#CEF26D',
-        text: '#0F172A',
-        label: '💬 Message',
+        bg: figmaColors.brandLime,
+        text: figmaColors.ink,
+        label: 'Message',
         isRequest: false,
       };
     }
@@ -531,7 +531,9 @@ export default function DiscoverScreen() {
           }
           ListEmptyComponent={
             <View style={styles.emptyBox}>
-              <Text style={styles.emptyIcon}>🧭</Text>
+              <View style={{ marginBottom: 10 }}>
+                <CompassIcon size={32} color={figmaColors.inkMuted} />
+              </View>
               <Text style={styles.emptyTitle}>No matching communities</Text>
               <Text style={styles.emptySubtitle}>
                 Try adjusting your search or category filter.

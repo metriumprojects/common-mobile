@@ -88,3 +88,4 @@ export const figmaShadows: Record<'card' | 'floating' | 'subtle', ViewStyle> = {
     default: {},
   }) as ViewStyle,
 };
+

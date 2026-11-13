@@ -29,6 +29,7 @@ import {
   LockIcon,
   SearchIcon,
   CloseIcon,
+  CompassIcon,
 } from '../components/FigmaIcons';
 import { figmaColors, figmaShadows } from '../theme/figmaTheme';
 
@@ -508,13 +509,12 @@ export default function HomeScreen() {
                 </TouchableOpacity>
 
                 <TouchableOpacity
-                  style={styles.emptyDiscoverButton}
+                  style={[styles.emptyDiscoverButton, { flexDirection: 'row', alignItems: 'center', gap: 6 }]}
                   onPress={() => navigation.navigate('Discover')}
                   activeOpacity={0.85}
                 >
-                  <Text style={styles.emptyDiscoverButtonText}>
-                    🧭 Discover
-                  </Text>
+                  <CompassIcon size={15} color={figmaColors.ink} />
+                  <Text style={styles.emptyDiscoverButtonText}>Discover</Text>
                 </TouchableOpacity>
               </View>
             </View>
@@ -545,7 +545,7 @@ export default function HomeScreen() {
                 onPress={() => setShowCreateModal(false)}
                 hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
               >
-                <Text style={styles.modalCloseText}>✕</Text>
+                <CloseIcon size={18} color={figmaColors.ink} />
               </TouchableOpacity>
             </View>
 

@@ -13,6 +13,8 @@ import {
 } from 'react-native';
 import Toast from 'react-native-toast-message';
 import { mobileApi } from '../api/client';
+import { CloseIcon } from './FigmaIcons';
+import { figmaColors } from '../theme/figmaTheme';
 
 interface CreateCommunityModalProps {
   visible: boolean;
@@ -93,7 +95,7 @@ export default function CreateCommunityModal({
               onPress={onClose}
               hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
             >
-              <Text style={styles.modalCloseText}>✕</Text>
+              <CloseIcon size={18} color={figmaColors.ink} />
             </TouchableOpacity>
           </View>
 
