@@ -12,6 +12,9 @@
     "version": "1.0.0",
     "runtimeVersion": "1.0.0",
     "updates": {
+      "enabled": true,
+      "checkAutomatically": "ON_LOAD",
+      "fallbackToCacheTimeout": 5000,
       "url": "https://u.expo.dev/82c203e7-cbdf-4567-8db6-1f2c50b16c04"
     },
     "orientation": "portrait",
