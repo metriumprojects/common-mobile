@@ -16,6 +16,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRoute, useNavigation } from '@react-navigation/native';
 import Toast from 'react-native-toast-message';
+import BottomSheetModal from '../components/BottomSheetModal';
 import { mobileApi } from '../api/client';
 import {
   getCachedCommunities,
@@ -1053,17 +1054,13 @@ export default function PrivateChatScreen() {
       </KeyboardAvoidingView>
 
       {/* Options Modal */}
-      <Modal
+      <BottomSheetModal
         visible={showOptionsModal}
-        animationType="slide"
-        transparent={true}
-        onRequestClose={() => setShowOptionsModal(false)}
+        onClose={() => setShowOptionsModal(false)}
       >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalSheet}>
-            <Text style={styles.modalTitle}>
-              Options with {recipient.name}
-            </Text>
+        <Text style={styles.modalTitle}>
+          Options with {recipient.name}
+        </Text>
 
             <TouchableOpacity
               style={styles.optionRowBtn}
@@ -1116,9 +1113,7 @@ export default function PrivateChatScreen() {
             >
               <Text style={styles.closeModalBtnText}>Close</Text>
             </TouchableOpacity>
-          </View>
-        </View>
-      </Modal>
+      </BottomSheetModal>
 
       {/* Emoji Reaction Modal */}
       <Modal
@@ -1128,7 +1123,7 @@ export default function PrivateChatScreen() {
         onRequestClose={() => setReactionTargetMessage(null)}
       >
         <TouchableOpacity
-          style={styles.modalOverlay}
+          style={[styles.modalOverlay, { backgroundColor: 'rgba(0, 0, 0, 0.01)' }]}
           activeOpacity={1}
           onPress={() => setReactionTargetMessage(null)}
         >
@@ -1170,10 +1165,12 @@ export default function PrivateChatScreen() {
         animationType="fade"
         onRequestClose={() => setPreviewImageUrl(null)}
       >
-        <View
+        <TouchableOpacity
+          activeOpacity={1}
+          onPress={() => setPreviewImageUrl(null)}
           style={{
             flex: 1,
-            backgroundColor: 'rgba(0,0,0,0.95)',
+            backgroundColor: 'rgba(0,0,0,0.92)',
             justifyContent: 'center',
             alignItems: 'center',
           }}
@@ -1202,7 +1199,7 @@ export default function PrivateChatScreen() {
               resizeMode="contain"
             />
           ) : null}
-        </View>
+        </TouchableOpacity>
       </Modal>
     </SafeAreaView>
   );

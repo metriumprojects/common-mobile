@@ -18,6 +18,7 @@ import { mobileApi } from '../api/client';
 import { mobileSocket } from '../api/socket';
 import { Community, PrivateSideChat } from '../types';
 import { useAuth } from '../context/AuthContext';
+import BottomSheetModal from '../components/BottomSheetModal';
 import {
   ChevronLeftIcon,
   LockIcon,
@@ -371,22 +372,19 @@ export default function CommunityInboxScreen() {
       )}
 
       {/* Start New Scoped Side-Chat Modal */}
-      <Modal
+      <BottomSheetModal
         visible={showNewChatModal}
-        animationType="slide"
-        transparent={true}
-        onRequestClose={() => setShowNewChatModal(false)}
+        onClose={() => setShowNewChatModal(false)}
+        scrollable={false}
       >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalSheet}>
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Start Scoped Side-Chat</Text>
-              <TouchableOpacity onPress={() => setShowNewChatModal(false)}>
-                <CloseIcon size={18} color={figmaColors.ink} />
-              </TouchableOpacity>
-            </View>
+        <View style={styles.modalHeader}>
+          <Text style={styles.modalTitle}>Start Scoped Side-Chat</Text>
+          <TouchableOpacity onPress={() => setShowNewChatModal(false)}>
+            <CloseIcon size={18} color={figmaColors.ink} />
+          </TouchableOpacity>
+        </View>
 
-            <ScrollView keyboardShouldPersistTaps="handled">
+        <ScrollView keyboardShouldPersistTaps="handled">
               <View style={[styles.scopedNote, { flexDirection: 'row', alignItems: 'center', gap: 8 }]}>
                 <LockIcon size={14} color={figmaColors.inkOlive} />
                 <Text style={[styles.scopedNoteText, { flex: 1 }]}>
@@ -478,9 +476,7 @@ export default function CommunityInboxScreen() {
                 )}
               </TouchableOpacity>
             </ScrollView>
-          </View>
-        </View>
-      </Modal>
+      </BottomSheetModal>
     </SafeAreaView>
   );
 }

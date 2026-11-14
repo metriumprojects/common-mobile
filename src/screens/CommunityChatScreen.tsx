@@ -27,6 +27,7 @@ import {
 import { mobileSocket } from '../api/socket';
 import { Community, ChatMessage } from '../types';
 import { useAuth } from '../context/AuthContext';
+import BottomSheetModal from '../components/BottomSheetModal';
 import {
   ChevronLeftIcon,
   InfoIcon,
@@ -1538,16 +1539,13 @@ export default function CommunityChatScreen() {
       )}
 
       {/* Thread Comments Drawer Modal */}
-      <Modal
+      <BottomSheetModal
         visible={Boolean(commentingMessage)}
-        animationType="slide"
-        transparent={true}
-        onRequestClose={() => setCommentingMessage(null)}
+        onClose={() => setCommentingMessage(null)}
+        scrollable={false}
       >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalSheet}>
-            <View style={styles.modalHeader}>
-              <View>
+        <View style={styles.modalHeader}>
+          <View>
                 <Text style={styles.modalTitle}>Thread Discussion</Text>
                 <Text style={styles.modalSubtitle}>
                   {commentingMessage?.comments?.length || 0} replies to{' '}
@@ -1627,21 +1625,15 @@ export default function CommunityChatScreen() {
                 <Text style={styles.commentSendBtnText}>Reply</Text>
               </TouchableOpacity>
             </View>
-          </View>
-        </View>
-      </Modal>
+      </BottomSheetModal>
 
       {/* Member Action Sheet Modal */}
-      <Modal
+      <BottomSheetModal
         visible={Boolean(selectedMember)}
-        animationType="slide"
-        transparent={true}
-        onRequestClose={() => setSelectedMember(null)}
+        onClose={() => setSelectedMember(null)}
       >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalSheet}>
-            <View style={styles.modalHeader}>
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+        <View style={styles.modalHeader}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
                 <View
                   style={[
                     styles.avatarSmall,
@@ -1787,9 +1779,7 @@ export default function CommunityChatScreen() {
                 </TouchableOpacity>
               </>
             ) : null}
-          </View>
-        </View>
-      </Modal>
+      </BottomSheetModal>
 
       {/* Emoji Reaction Modal */}
       <Modal
@@ -1799,7 +1789,7 @@ export default function CommunityChatScreen() {
         onRequestClose={() => setReactionTargetMessage(null)}
       >
         <TouchableOpacity
-          style={styles.modalOverlay}
+          style={[styles.modalOverlay, { backgroundColor: 'rgba(0, 0, 0, 0.01)' }]}
           activeOpacity={1}
           onPress={() => setReactionTargetMessage(null)}
         >
@@ -1839,16 +1829,13 @@ export default function CommunityChatScreen() {
       </Modal>
 
       {/* Community Info & Group Details Modal */}
-      <Modal
+      <BottomSheetModal
         visible={showInfoModal}
-        animationType="slide"
-        transparent={true}
-        onRequestClose={() => setShowInfoModal(false)}
+        onClose={() => setShowInfoModal(false)}
+        scrollable={false}
       >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalSheet}>
-            <View style={styles.modalHeader}>
-              <View style={{ flex: 1 }}>
+        <View style={styles.modalHeader}>
+          <View style={{ flex: 1 }}>
                 <Text style={styles.modalTitle}>{community?.name}</Text>
                 <Text style={styles.modalSubtitle}>
                   {community?.category} • {community?.location} •{' '}
@@ -1993,21 +1980,15 @@ export default function CommunityChatScreen() {
                 </TouchableOpacity>
               )}
             </ScrollView>
-          </View>
-        </View>
-      </Modal>
+      </BottomSheetModal>
 
       {/* Manage Pin / Event Modal */}
-      <Modal
+      <BottomSheetModal
         visible={Boolean(manageMode)}
-        animationType="fade"
-        transparent={true}
-        onRequestClose={() => setManageMode(null)}
+        onClose={() => setManageMode(null)}
       >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalSheet}>
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>
+        <View style={styles.modalHeader}>
+          <Text style={styles.modalTitle}>
                 {manageMode === 'pin'
                   ? 'Update Pinned Notice'
                   : manageMode === 'edit'
@@ -2121,9 +2102,7 @@ export default function CommunityChatScreen() {
                 </TouchableOpacity>
               </View>
             )}
-          </View>
-        </View>
-      </Modal>
+      </BottomSheetModal>
 
       {/* WhatsApp-style Image Lightbox */}
       <Modal
@@ -2132,10 +2111,12 @@ export default function CommunityChatScreen() {
         animationType="fade"
         onRequestClose={() => setPreviewImageUrl(null)}
       >
-        <View
+        <TouchableOpacity
+          activeOpacity={1}
+          onPress={() => setPreviewImageUrl(null)}
           style={{
             flex: 1,
-            backgroundColor: 'rgba(0,0,0,0.95)',
+            backgroundColor: 'rgba(0,0,0,0.92)',
             justifyContent: 'center',
             alignItems: 'center',
           }}
@@ -2164,7 +2145,7 @@ export default function CommunityChatScreen() {
               resizeMode="contain"
             />
           ) : null}
-        </View>
+        </TouchableOpacity>
       </Modal>
     </SafeAreaView>
   );

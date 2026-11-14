@@ -26,6 +26,7 @@ import { mobileSocket } from '../api/socket';
 import { Community, UserProfile } from '../types';
 import { useAuth } from '../context/AuthContext';
 import BottomNav from '../components/BottomNav';
+import BottomSheetModal from '../components/BottomSheetModal';
 import {
   VerifiedBadge,
   LockIcon,
@@ -521,22 +522,19 @@ export default function ProfileScreen() {
       </ScrollView>
 
       {/* Edit Profile Modal */}
-      <Modal
+      <BottomSheetModal
         visible={showEditModal}
-        animationType="slide"
-        transparent={true}
-        onRequestClose={() => setShowEditModal(false)}
+        onClose={() => setShowEditModal(false)}
+        scrollable={false}
       >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalSheet}>
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Edit Profile</Text>
-              <TouchableOpacity onPress={() => setShowEditModal(false)}>
-                <CloseIcon size={18} color={figmaColors.ink} />
-              </TouchableOpacity>
-            </View>
+        <View style={styles.modalHeader}>
+          <Text style={styles.modalTitle}>Edit Profile</Text>
+          <TouchableOpacity onPress={() => setShowEditModal(false)}>
+            <CloseIcon size={18} color={figmaColors.ink} />
+          </TouchableOpacity>
+        </View>
 
-            <ScrollView keyboardShouldPersistTaps="handled">
+        <ScrollView keyboardShouldPersistTaps="handled">
               <Text style={styles.inputLabel}>AVATAR COLOR</Text>
               <View style={styles.colorRow}>
                 {AVATAR_COLORS.map((c) => (
@@ -608,9 +606,7 @@ export default function ProfileScreen() {
                 )}
               </TouchableOpacity>
             </ScrollView>
-          </View>
-        </View>
-      </Modal>
+      </BottomSheetModal>
       {/* Unified Figma Bottom Navigation Bar */}
       <BottomNav
         activeTab="Profile"

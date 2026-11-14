@@ -27,6 +27,7 @@ import { mobileSocket } from '../api/socket';
 import { Community, UserProfile } from '../types';
 import { useAuth } from '../context/AuthContext';
 import BottomNav from '../components/BottomNav';
+import BottomSheetModal from '../components/BottomSheetModal';
 import BrandHeader from '../components/BrandHeader';
 import {
   VerifiedBadge,
@@ -626,28 +627,25 @@ export default function HomeScreen() {
       />
 
       {/* Create New Community Modal */}
-      <Modal
+      <BottomSheetModal
         visible={showCreateModal}
-        animationType="slide"
-        transparent={true}
-        onRequestClose={() => setShowCreateModal(false)}
+        onClose={() => setShowCreateModal(false)}
+        scrollable={false}
       >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalSheet}>
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Create New Community</Text>
-              <TouchableOpacity
-                onPress={() => setShowCreateModal(false)}
-                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-              >
-                <CloseIcon size={18} color={figmaColors.ink} />
-              </TouchableOpacity>
-            </View>
+        <View style={styles.modalHeader}>
+          <Text style={styles.modalTitle}>Create New Community</Text>
+          <TouchableOpacity
+            onPress={() => setShowCreateModal(false)}
+            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+          >
+            <CloseIcon size={18} color={figmaColors.ink} />
+          </TouchableOpacity>
+        </View>
 
-            <ScrollView
-              contentContainerStyle={styles.modalScroll}
-              keyboardShouldPersistTaps="handled"
-            >
+        <ScrollView
+          contentContainerStyle={styles.modalScroll}
+          keyboardShouldPersistTaps="handled"
+        >
               <Text style={styles.inputLabel}>COMMUNITY NAME *</Text>
               <TextInput
                 style={styles.inputField}
@@ -723,9 +721,7 @@ export default function HomeScreen() {
                 )}
               </TouchableOpacity>
             </ScrollView>
-          </View>
-        </View>
-      </Modal>
+      </BottomSheetModal>
     </SafeAreaView>
   );
 }

@@ -13,6 +13,7 @@ import {
 } from 'react-native';
 import Toast from 'react-native-toast-message';
 import { mobileApi } from '../api/client';
+import BottomSheetModal from './BottomSheetModal';
 import { CloseIcon } from './FigmaIcons';
 import { figmaColors } from '../theme/figmaTheme';
 
@@ -78,31 +79,21 @@ export default function CreateCommunityModal({
   };
 
   return (
-    <Modal
-      visible={visible}
-      animationType="slide"
-      transparent
-      onRequestClose={onClose}
-    >
-      <KeyboardAvoidingView
-        style={styles.modalOverlay}
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-      >
-        <View style={styles.modalSheet}>
-          <View style={styles.modalHeader}>
-            <Text style={styles.modalTitle}>Create New Community</Text>
-            <TouchableOpacity
-              onPress={onClose}
-              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-            >
-              <CloseIcon size={18} color={figmaColors.ink} />
-            </TouchableOpacity>
-          </View>
+    <BottomSheetModal visible={visible} onClose={onClose} scrollable={false}>
+      <View style={styles.modalHeader}>
+        <Text style={styles.modalTitle}>Create New Community</Text>
+        <TouchableOpacity
+          onPress={onClose}
+          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+        >
+          <CloseIcon size={18} color={figmaColors.ink} />
+        </TouchableOpacity>
+      </View>
 
-          <ScrollView
-            contentContainerStyle={styles.modalScroll}
-            keyboardShouldPersistTaps="handled"
-          >
+      <ScrollView
+        contentContainerStyle={styles.modalScroll}
+        keyboardShouldPersistTaps="handled"
+      >
             <Text style={styles.inputLabel}>COMMUNITY NAME *</Text>
             <TextInput
               style={styles.inputField}
@@ -172,9 +163,7 @@ export default function CreateCommunityModal({
               )}
             </TouchableOpacity>
           </ScrollView>
-        </View>
-      </KeyboardAvoidingView>
-    </Modal>
+    </BottomSheetModal>
   );
 }
 
