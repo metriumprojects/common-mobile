@@ -104,7 +104,10 @@ export default function BottomSheetModal({
             ]}
             {...(variant === 'bottom' ? panResponder.panHandlers : {})}
           >
-            <Pressable onPress={(e) => e.stopPropagation()}>
+            <Pressable
+              style={variant === 'bottom' ? styles.innerPressable : undefined}
+              onPress={(e) => e.stopPropagation()}
+            >
               {variant === 'bottom' ? (
                 <View style={styles.dragHandleWrap}>
                   <View style={styles.dragHandle} />
@@ -154,6 +157,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingTop: 10,
     paddingBottom: Platform.OS === 'ios' ? 28 : 20,
+    flexShrink: 1,
     borderTopWidth: 1,
     borderLeftWidth: 1,
     borderRightWidth: 1,
@@ -163,6 +167,9 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.08,
     shadowRadius: 12,
     elevation: 8,
+  },
+  innerPressable: {
+    flexShrink: 1,
   },
   centerSheet: {
     backgroundColor: '#FFFFFF',
@@ -190,3 +197,4 @@ const styles = StyleSheet.create({
     backgroundColor: '#CBD5E1',
   },
 });
+

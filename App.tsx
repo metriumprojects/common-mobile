@@ -203,9 +203,12 @@ export default function App() {
             Toast.show({
               type: 'info',
               text1: 'Update Downloaded',
-              text2: 'Close and reopen the app to apply the latest update.',
-              visibilityTime: 4000,
+              text2: 'Applying latest update now...',
+              visibilityTime: 2500,
             });
+            setTimeout(() => {
+              Updates.reloadAsync().catch(() => {});
+            }, 1200);
           }
         }
       } catch (err) {
